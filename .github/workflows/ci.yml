@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+
+jobs:
+  fmt:
+    name: fmt --check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: clippy -D warnings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test-isolated:
+    name: isolated tests (fake HOME, no compositor)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # Unit + integration tests only touch tempfile dirs (see tests/).
+      # No $HOME, no pacman, no quickshell, no network.
+      - run: cargo test --all-targets --all-features --verbose -- --test-threads=4
+      - name: CLI smoke in sandbox
+        run: |
+          set -euo pipefail
+          cargo build --locked --bins || cargo build --bins
+          SANDBOX="$(mktemp -d)"
+          export HOME="$SANDBOX/home" XDG_CONFIG_HOME="$SANDBOX/home/.config" XDG_DATA_HOME="$SANDBOX/home/.local/share"
+          mkdir -p "$HOME/.config" "$XDG_DATA_HOME/tapes/demo/.config/hypr"
+          echo "x" > "$XDG_DATA_HOME/tapes/demo/.config/hypr/hyprland.conf"
+          ./target/debug/tape validate "$XDG_DATA_HOME/tapes/demo"
+          ./target/debug/tape insert demo --no-hooks
+          ./target/debug/tape status
+          test -L "$HOME/.config/hypr"
+          ./target/debug/tape eject --no-hooks
+          test ! -L "$HOME/.config/hypr"
+          rm -rf "$SANDBOX"
+          echo "sandbox smoke passed"
+
+  docs:
+    name: doc warnings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --no-deps --all-features

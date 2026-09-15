@@ -1,0 +1,17 @@
+/target/
+Cargo.lock
+*.orig
+*.rej
+.DS_Store
+/result
+.direnv/
+
+# reference material, nested git checkouts, never part of v2
+/references/
+
+# editor and os noise
+.idea/
+.vscode/
+*~
+*.swp
+*.log
