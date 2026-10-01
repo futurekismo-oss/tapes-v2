@@ -1,3 +1,14 @@
+mod cli;
+
+use clap::Parser;
+use cli::structs::Cli;
+
 fn main() {
-    println!("Hello, world!");
+
+    let cli = Cli::parse();
+
+    match cli.commands {
+        _ => todo!()
+    }
+   
 }
