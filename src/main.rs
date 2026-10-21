@@ -6,7 +6,7 @@ use clap::Parser;
 use cli::structs::Cli;
 use log::{info, LevelFilter};
 
-use crate::cli::{show, structs::Commands};
+use crate::cli::{insert, show, structs::Commands};
 
 fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
@@ -16,6 +16,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     match cli.command {
         Commands::Show { name } => show::run(name)?,
+        Commands::Insert { name, path, dry_run, no_hooks } => insert::run(name, path, dry_run, no_hooks)?,
         _ => todo!(),
     }
 
@@ -39,4 +40,3 @@ fn init_logging(verbose: bool) {
 
     builder.init();
 }
-

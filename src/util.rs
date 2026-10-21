@@ -1,14 +1,14 @@
-use std::path::PathBuf;
+use std::{panic::Location, path::PathBuf};
 
 use anyhow::{bail, Context};
-use dirs::home_dir;
+use dirs::{config_local_dir, data_dir, home_dir};
 use log::info;
 
 use crate::toml::TapeManifest;
 
 pub fn get_tapes_data(tape_name: &str) -> Result<TapeManifest, anyhow::Error> {
     // let tapes_path = get_tapes_default_path()?;
-    let tapes_path =get_tapes_default_path()?;
+    let tapes_path = get_tapes_default_path()?;
 
     info!("tapes path: {tapes_path:?}");
 
@@ -33,5 +33,22 @@ pub fn get_tapes_data(tape_name: &str) -> Result<TapeManifest, anyhow::Error> {
 
 pub fn get_tapes_default_path() -> Result<PathBuf, anyhow::Error> {
     let tapes_dir = home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
-    Ok(tapes_dir.join(".tapes"))
+    let tapes_dir = tapes_dir.join(".tapes");
+
+    if tapes_dir.exists() {
+        Ok(tapes_dir)
+    } else {
+        bail!("{} does not exist", tapes_dir.display().to_string())
+    }
+}
+
+pub fn get_tapes_data_path() -> Result<PathBuf, anyhow::Error> {
+    let local_dir = data_dir().ok_or_else(|| anyhow::anyhow!("Could not get local dir"))?;
+    let tapes_data_path = local_dir.join("tapes");
+
+    if tapes_data_path.exists() {
+        Ok(tapes_data_path)
+    } else {
+        bail!("{} does not exist", tapes_data_path.display().to_string())
+    }
 }

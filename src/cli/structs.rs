@@ -21,9 +21,6 @@ pub enum Commands {
         /// Arbitrary tape directory (e.g. a cloned ii-end4 fork).
         #[arg(long)]
         path: Option<PathBuf>,
-        /// Eject-then-insert when already active or on conflict.
-        #[arg(long)]
-        reinsert: bool,
         /// Plan only; touch nothing.
         #[arg(long)]
         dry_run: bool,
