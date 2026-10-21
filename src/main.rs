@@ -1,4 +1,5 @@
 mod cli;
+pub mod state;
 pub mod toml;
 pub mod util;
 
@@ -6,10 +7,15 @@ use clap::Parser;
 use cli::structs::Cli;
 use log::{info, LevelFilter};
 
-use crate::cli::{insert, show, structs::Commands};
+use cli::{insert, show, structs::Commands};
+use state::AppState;
+use util::get_tapes_data_path;
 
 fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
+
+    let state_path = get_tapes_data_path()?.join("state.json");
+    let mut app = AppState::load(state_path)?;
 
     init_logging(cli.verbose);
     info!("Tapes v2 startup");
