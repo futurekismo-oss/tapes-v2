@@ -1,17 +1,25 @@
 mod cli;
+pub mod toml;
+pub mod util;
+
 use clap::Parser;
 use cli::structs::Cli;
 use log::{info, LevelFilter};
 
-fn main() {
+use crate::cli::{show, structs::Commands};
+
+fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
 
     init_logging(cli.verbose);
     info!("Tapes v2 startup");
 
     match cli.command {
+        Commands::Show { name } => show::run(name)?,
         _ => todo!(),
     }
+
+    Ok(())
 }
 
 fn init_logging(verbose: bool) {
@@ -31,3 +39,4 @@ fn init_logging(verbose: bool) {
 
     builder.init();
 }
+

@@ -6,5 +6,8 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
+dirs = "7.0.0"
 env_logger = "0.11.11"
 log = "0.4.34"
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.1.8"
