@@ -3,7 +3,9 @@
 A atomic, per-file dotfiles switcher
 
 # TODO
-- [ ] show command
+- [x] show command
 - [ ] insert command
+ - [ ] try to remove .clone()'s in the insert command
 - [ ] eject command
-- [ ] status command
+- [x] status command
+- [ ] install comamnd
