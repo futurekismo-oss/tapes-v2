@@ -22,7 +22,12 @@ fn main() -> Result<(), anyhow::Error> {
 
     match cli.command {
         Commands::Show { name } => show::run(name)?,
-        Commands::Insert { name, path, dry_run, no_hooks } => insert::run(name, path, dry_run, no_hooks)?,
+        Commands::Insert {
+            name,
+            path,
+            dry_run,
+            no_hooks,
+        } => insert::run(&mut app, name, path, dry_run, no_hooks)?,
         _ => todo!(),
     }
 

@@ -9,6 +9,7 @@ use log::{error, info};
 
 use crate::{state::AppState, toml::TapeManifest};
 
+// Loads and parses the tape.toml manifest from a tape directory.
 pub fn load_manifest(tape_dir: &Path) -> Result<TapeManifest, anyhow::Error> {
     let manifest_path = tape_dir.join("tape.toml");
     info!("manifest path: {manifest_path:?}");
@@ -27,7 +28,7 @@ pub fn load_manifest(tape_dir: &Path) -> Result<TapeManifest, anyhow::Error> {
     Ok(manifest)
 }
 
-/// Loads the manifest of a tape registered under the default tapes path.
+// Loads the manifest of a tape registered under the default tapes path.
 pub fn get_tapes_data(tape_name: &str) -> Result<TapeManifest, anyhow::Error> {
     let tapes_path = get_tapes_default_path()?;
     info!("tapes path: {tapes_path:?}");
