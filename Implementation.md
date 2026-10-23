@@ -46,8 +46,7 @@ the boring one. `git clone` the repo, generate the `tape.toml` (pinned to the ex
 
 the hard one. step by step, using `~/.config` as `abc`:
 
-1. **lock.** take an `flock` on `.tapes.lock`. if another tapes is running, refuse.
-2. **refuse if managed already** (no stacking, no nested inserts for now). refuse if `abc.bak.tapes` exists. check the marker `.tape-managed` isn't already in `abc`.
+1. **refuse if managed already** (no stacking, no nested inserts for now). refuse if `abc.bak.tapes` exists. check the marker `.tape-managed` isn't already in `abc`.
 3. **stage.** create `abb` as a sibling of `abc` (same fs, non-negotiable):
    - symlink every entry in `abc` that the tape *doesn't* touch → points at `abc/...` (these stay valid after the swap, since the *path* `abc` is then the staged dir — self-referential but correct)
    - symlink the tape's entries from `acc` into `abb` (these don't come from `abc` — the tape wins at any path collision)

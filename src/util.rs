@@ -1,11 +1,13 @@
 use std::{
     panic::Location,
+    io,
     path::{Path, PathBuf},
 };
 
 use anyhow::{bail, Context};
 use dirs::{config_local_dir, data_dir, home_dir};
 use log::{error, info};
+use nix::fcntl::{renameat2, RenameFlags};
 
 use crate::{state::AppState, toml::TapeManifest};
 
@@ -70,4 +72,15 @@ pub fn save_state_data(data: &mut AppState) -> Result<(), anyhow::Error> {
     data.save(dir)?;
 
     Ok(())
+}
+
+pub fn atomic_swap<P: AsRef<Path>, Q: AsRef<Path>>(path1: P, path2: Q) -> io::Result<()> {
+    renameat2(
+        None, // Uses AT_FDCWD (relative to current working directory)
+        path1.as_ref(),
+        None, // Uses AT_FDCWD
+        path2.as_ref(),
+        RenameFlags::RENAME_EXCHANGE,
+    )
+    .map_err(|e| io::Error::from_raw_os_error(e as i32))
 }
