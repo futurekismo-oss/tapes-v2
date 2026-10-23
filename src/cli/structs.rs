@@ -50,5 +50,7 @@ pub enum Commands {
     Show {
         name: Option<String>,
     },
-    
+
+    // TODO: Plans for install and commit command
+       
 }
