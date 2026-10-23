@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[command(name = "tape", about = "Atomic per-target dotfile switcher (v2)")]
+#[command(name = "tape", version, about = "Atomic per-target dotfile switcher (v2)")]
 pub struct Cli {
     #[arg(short, long, global = true)]
     pub verbose: bool,
