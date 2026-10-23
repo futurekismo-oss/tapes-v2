@@ -17,7 +17,7 @@ fn main() -> Result<(), anyhow::Error> {
     let state_path = get_tapes_data_path()?.join("state.json");
     let mut app = AppState::load(state_path)?;
 
-    init_logging(cli.verbose);
+    init_logging(cli.logging);
     info!("Tapes v2 startup");
 
     match cli.command {
@@ -28,20 +28,20 @@ fn main() -> Result<(), anyhow::Error> {
             dry_run,
             no_hooks,
         } => insert::run(&mut app, name, path, dry_run, no_hooks)?,
-        Commands::Status => status::show(app)?,
+        Commands::Status => status::show(app, cli.verbose)?,
         _ => todo!(),
     }
 
     Ok(())
 }
 
-fn init_logging(verbose: bool) {
+fn init_logging(logging: bool) {
     let mut builder = env_logger::Builder::new();
 
     if let Ok(rust_log_env) = std::env::var("RUST_LOG") {
         builder.parse_filters(&rust_log_env);
     } else {
-        let filter_level = if verbose {
+        let filter_level = if logging {
             LevelFilter::Trace
         } else {
             LevelFilter::Warn

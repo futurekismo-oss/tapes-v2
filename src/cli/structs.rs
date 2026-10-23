@@ -4,9 +4,14 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(name = "tape", version, about = "Atomic per-target dotfile switcher (v2)")]
 pub struct Cli {
+    /// Enable logging output
+    #[arg(short, long, global = true)]
+    pub logging: bool,
+
+    /// Increase the verbosity of some commands
     #[arg(short, long, global = true)]
     pub verbose: bool,
-
+  
     #[command(subcommand)]
     pub command: Commands
 }
