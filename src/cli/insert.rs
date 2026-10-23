@@ -21,7 +21,7 @@ pub fn run(
         app.eject()?;
     }
 
-    let (tape_path, manifest) = resolve_tape(&name, path)?;
+    let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
     let tape_name = manifest.tape.name.clone();
 
     app.path = Some(tape_path);
@@ -40,7 +40,7 @@ pub fn run(
 }
 
 fn resolve_tape(
-    name: &Option<String>,
+    name: Option<&String>,
     path: Option<PathBuf>,
 ) -> anyhow::Result<(PathBuf, TapeManifest)> {
     if let Some(name) = name {
@@ -54,7 +54,7 @@ fn resolve_tape(
 
     if Path::new("./tape.toml").exists() {
         println!("Found tape.toml in current dir. \nInserting...");
-        let cwd = std::env::current_dir()?.canonicalize()?;
+        let cwd = std::env::current_dir()?;
         return Ok((cwd.clone(), load_manifest(&cwd)?));
     }
 
