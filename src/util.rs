@@ -1,15 +1,35 @@
-use std::{panic::Location, path::PathBuf};
+use std::{
+    panic::Location,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{bail, Context};
 use dirs::{config_local_dir, data_dir, home_dir};
-use log::info;
+use log::{error, info};
 
-use crate::toml::TapeManifest;
+use crate::{state::AppState, toml::TapeManifest};
 
+pub fn load_manifest(tape_dir: &Path) -> Result<TapeManifest, anyhow::Error> {
+    let manifest_path = tape_dir.join("tape.toml");
+    info!("manifest path: {manifest_path:?}");
+
+    if !manifest_path.exists() {
+        error!("tape.toml not found in {}", tape_dir.display());
+        bail!("a tape.toml does not exist in {}", tape_dir.display());
+    }
+
+    let content = std::fs::read_to_string(&manifest_path)
+        .with_context(|| format!("Failed to read manifest at {manifest_path:?}"))?;
+
+    let manifest: TapeManifest = toml::from_str(&content)
+        .with_context(|| format!("Failed to parse manifest at {manifest_path:?}"))?;
+
+    Ok(manifest)
+}
+
+/// Loads the manifest of a tape registered under the default tapes path.
 pub fn get_tapes_data(tape_name: &str) -> Result<TapeManifest, anyhow::Error> {
-    // let tapes_path = get_tapes_default_path()?;
     let tapes_path = get_tapes_default_path()?;
-
     info!("tapes path: {tapes_path:?}");
 
     if !tapes_path.is_dir() {
@@ -19,16 +39,7 @@ pub fn get_tapes_data(tape_name: &str) -> Result<TapeManifest, anyhow::Error> {
     let tape_dir = tapes_path.join(tape_name);
     info!("tape dir: {tape_dir:?}");
 
-    let manifest_path = tape_dir.join("tape.toml");
-    info!("manifest path: {tape_dir:?}");
-
-    let content = std::fs::read_to_string(&manifest_path)
-        .with_context(|| format!("Failed to read manifest at {manifest_path:?}"))?;
-
-    let manifest: TapeManifest = toml::from_str(&content)
-        .with_context(|| format!("Failed to parse manifest at {manifest_path:?}"))?;
-
-    Ok(manifest)
+    load_manifest(&tape_dir)
 }
 
 pub fn get_tapes_default_path() -> Result<PathBuf, anyhow::Error> {
@@ -51,4 +62,11 @@ pub fn get_tapes_data_path() -> Result<PathBuf, anyhow::Error> {
     } else {
         bail!("{} does not exist", tapes_data_path.display().to_string())
     }
+}
+
+pub fn save_state_data(data: &mut AppState) -> Result<(), anyhow::Error> {
+    let dir = get_tapes_data_path()?.join("state.json");
+    data.save(dir)?;
+
+    Ok(())
 }
