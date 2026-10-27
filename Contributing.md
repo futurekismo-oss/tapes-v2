@@ -1,37 +1,43 @@
 # GUIDELINES FOR CONTRIBUTORS
 
-- main.rs should be an entry point and delegate everything outwards to cli and ops, most errors should also propagate back to main.rs unless said error needs to handle its own failure for the sake of safety
+- `main.rs` should be an entry point and delegate everything outwards to `cli` and `ops`. Most errors should also propagate back to `main.rs`, unless a specific error needs to handle its own failure for the sake of safety.
 
-- the default rust style is accepted
+- The default Rust style is accepted.
 
-- try not to use .clone() and unsafe
+- Try not to use `.clone()` and `unsafe`.
 
-- follow a strict never nesting rule
-  - 5 layers of nesting is forbidden
-  - 3 layers of nesting holds a grudge
+- Follow a strict never-nesting rule:
+  - 5 layers of nesting is forbidden.
+  - 3 layers of nesting holds a grudge.
 
-- protize simplictity over fast complexity, protizie safety over all that
+- Prioritize simplicity over fast complexity, and prioritize safety above all else.
 
-- code needs to be read, so let it breath, dont write hieroglyphs 
+- Code needs to be read, so let it breathe; don't write hieroglyphs.
 
-- run [typos](https://github.com/crate-ci/typos) to catch spellings mistakes
+- Run [typos](https://github.com/crate-ci/typos) to catch spelling mistakes.
 
-- follow the DRY (Don't repeat Yourself) technique
+- Follow the DRY (Don't Repeat Yourself) technique.
 
-- utilize helpers to reduce the density of functions but use them in moderation
- - when its a staged function - yes
- - when its a utility - no
+- Utilize helpers to reduce the density of functions, but use them in moderation:
+  - When it's a staged function — yes.
+  - When it's a utility — no.
 
-- dont do any programming tricks that require specific knowledge to understand, tricks are fun until you have to patch them at 2AM
+- Don't use any programming tricks that require specific knowledge to understand. Tricks are fun until you have to patch them at 2 AM.
 
-- if a struct definition takes too many lines, try to move it to a separate files
+- If a struct definition takes too many lines, try to move it to a separate file.
 
-- helpers should remain the file they are used and should go into util if 2 files need to use it with context ofcourse,
-  - the insert helper stays in the insert command unless the install command needs it, however get_tapes_data can go in utils
+- Try to keep helpers in the file where they are used. They should only go into `util` if two files need to use them (with context, of course).
+  - The `insert` helper stays in the `insert` command unless the `install` command needs it; however, `get_tapes_data` can go in `utils`.
 
-- read the previous commit messages to get a sense of how to commit
-  - if i dont like the message i'll request a rebase
+- Read the previous commit messages to get a sense of how to commit.
+  - If I don't like the message, I'll request a rebase.
 
-- you dont have to follow this strictly as its quite leinet but follow the spirit of it
+- You don't have to follow this strictly, as it's quite lenient, but please follow the spirit of it.
 
-> ## Thank you for contributing to tapes 
+- AI is skeptically allowed in this repo:
+  - You must understand the code fully.
+  - Be liable for any errors.
+  - Fully agentic commits are not allowed.
+  - Use AI the same way you would use Stack Overflow if your `Ctrl+C` and `Ctrl+V` keys didn't work.
+
+> ## Thank you for contributing to tapes!

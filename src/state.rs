@@ -1,11 +1,15 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+use crate::cli::insert::Target;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppState {
     pub active_tape: Option<String>,
     pub path: Option<PathBuf>,
+    pub targets: Option<HashMap<String, Target>>
 }
 
 impl AppState {
@@ -14,6 +18,7 @@ impl AppState {
             return Ok(AppState {
                 active_tape: None,
                 path: None,
+                targets: None,
             });
         }
         let content = fs::read_to_string(file_path)?;
@@ -47,6 +52,7 @@ impl AppState {
     pub fn eject(&mut self) -> Result<(), anyhow::Error> {
         self.active_tape = None;
         self.path = None;
+        self.targets = None;
 
         Ok(())
     }

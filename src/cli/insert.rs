@@ -5,6 +5,7 @@ use crate::{
 };
 use dirs::{config_dir, home_dir};
 use log::info;
+use serde::{Deserialize, Serialize};
 use serde_json::map::Entry;
 use std::{
     collections::HashMap,
@@ -37,11 +38,11 @@ pub fn run(
     // inserted methods will go here into to inserted the tape atomictly
     let targets = resolve_targets(&app)?;
 
-    println!("{:#?}", targets);
+    app.targets = Some(targets);
 
     save_state_data(app)?;
 
-    println!("{:?}", app);
+    println!("{:?}", app.active_tape);
 
     Ok(())
 }
@@ -85,8 +86,8 @@ fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
     Ok(detected)
 }
 
-#[derive(Debug)]
-struct Target {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Target {
     target_path: PathBuf,
     symlink_dest: PathBuf,
 }
