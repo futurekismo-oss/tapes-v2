@@ -36,7 +36,6 @@ pub enum Commands {
 
     /// Eject the active tape (or the named one).
     Eject {
-        name: Option<String>,
         #[arg(long)]
         dry_run: bool,
         #[arg(long)]
@@ -52,5 +51,7 @@ pub enum Commands {
     },
 
     // TODO: Plans for install and commit command
+    Install,
+    Commit,
        
 }

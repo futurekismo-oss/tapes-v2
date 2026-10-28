@@ -1,23 +1,13 @@
 use anyhow::bail;
-use dirs::{config_dir, home_dir};
 
-use crate::{cli::show, state::AppState};
+use crate::{cli::show, state::AppState, util::validate_correct_tapes_dir_structure};
 
 pub fn show(app: AppState, verbose: bool) -> Result<(), anyhow::Error> {
-    let home_dir = home_dir().expect("home dir should exist");
-    let config_dir = config_dir().expect("Config dir should exist");
-    let tapes_config_dir = home_dir.join(".config.tapes");
+    if let Err(error) = validate_correct_tapes_dir_structure() {
+        println!("Either no tapes is currently inserted or something has gone wrong");
+        println!("Bug Report Here: https://github.com/futurekismo-oss/tapes-v2/issues");
 
-    if !config_dir.exists() {
-        bail!("{config_dir:?} doesn't exist, exiting");
-    }
-
-    if !tapes_config_dir.exists() {
-        bail!("{tapes_config_dir:?} doesn't exist, exiting");
-    }
-
-    if !config_dir.join(".tape-managed").exists() {
-        bail!("{config_dir:?} is not managed by tapes")
+        bail!(error);
     }
 
     if app.active_tape.is_some() || app.path.is_some() {

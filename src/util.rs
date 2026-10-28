@@ -1,11 +1,10 @@
 use std::{
-    panic::Location,
     io,
     path::{Path, PathBuf},
 };
 
 use anyhow::{bail, Context};
-use dirs::{config_local_dir, data_dir, home_dir};
+use dirs::{config_dir, data_dir, home_dir};
 use log::{error, info};
 use nix::fcntl::{renameat2, RenameFlags};
 
@@ -83,4 +82,29 @@ pub fn atomic_swap<P: AsRef<Path>, Q: AsRef<Path>>(path1: P, path2: Q) -> io::Re
         RenameFlags::RENAME_EXCHANGE,
     )
     .map_err(|e| io::Error::from_raw_os_error(e as i32))
+}
+
+pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
+    let home_dir = home_dir().expect("home dir should exist");
+    let config_dir = config_dir().expect("Config dir should exist");
+    let tapes_config_dir = home_dir.join(".config.tapes");
+
+    if !config_dir.exists() {
+        bail!("{config_dir:?} doesn't exist, exiting");
+    }
+    info!("{:?} exists", config_dir);
+
+    if !tapes_config_dir.exists() {
+        bail!("{tapes_config_dir:?} doesn't exist, exiting");
+    }
+    info!("{:?} exists", tapes_config_dir);
+
+
+    let marker_path = config_dir.join(".tapes-managed");
+    if !marker_path.exists() {
+        bail!("{config_dir:?} is not managed by tapes")
+    }
+    info!("{:?} exists", marker_path);
+
+    Ok(())
 }

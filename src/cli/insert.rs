@@ -1,7 +1,5 @@
 use crate::{
-    toml::TapeManifest,
-    util::{atomic_swap, get_tapes_data, get_tapes_default_path, load_manifest, save_state_data},
-    AppState,
+    AppState, cli::eject::{self, eject_tapes}, toml::TapeManifest, util::{atomic_swap, get_tapes_data, get_tapes_default_path, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
 };
 use anyhow::bail;
 use dirs::{config_dir, home_dir};
@@ -26,13 +24,18 @@ pub fn run(
     info!("starting insert command");
     info!("Current tapes: {:?}", app.active_tape);
 
-    if app.active_tape.is_some() {
-        app.eject()?;
+    let config_dir = config_dir().expect("config dir should exist");
+    let home = home_dir().expect("Home dir should exist");
+    let new_config_dir = home.join(".config.tapes");
+
+    println!("config: {:?}\n new_config_dir: {:?}", config_dir, new_config_dir); 
+
+    if app.active_tape.is_some() && !dry_run {
+        eject_tapes(app, &config_dir, &new_config_dir)?;
     }
 
     let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
     let tape_name = manifest.tape.name.clone();
-    let config_dir = config_dir().expect("config dir should exist");
 
     if config_dir.is_symlink() {
         bail!("{config_dir:?} is a symlink, prone to fail");
@@ -40,9 +43,6 @@ pub fn run(
 
     app.path = Some(tape_path);
     app.active_tape = Some(tape_name);
-
-    let home = home_dir().expect("Home dir should exist");
-    let new_config_dir = home.join(".config.tapes");
 
     let targets = resolve_targets(app, &new_config_dir)?;
     app.targets = Some(targets);
