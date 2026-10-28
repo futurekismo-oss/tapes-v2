@@ -29,6 +29,9 @@
 - Try to keep helpers in the file where they are used. They should only go into `util` if two files need to use them (with context, of course).
   - The `insert` helper stays in the `insert` command unless the `install` command needs it; however, `get_tapes_data` can go in `utils`.
 
+- Try not to write code blind, test, test, test.
+  - This repo is currently lacking in test so that might be the first place to commit
+
 - Read the previous commit messages to get a sense of how to commit.
   - If I don't like the message, I'll request a rebase.
 
