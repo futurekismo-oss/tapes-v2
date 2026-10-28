@@ -36,9 +36,9 @@ fn display_tape_info(tape: TapeManifest) {
     println!("Name: {}", tape.tape.name);
     println!("Description: {}", tape.tape.desc);
 
-    println!("Hooks");
-
     if let Some(hooks) = &tape.hooks {
+        println!("Hooks");
+
         if !hooks.insert.is_empty() {
             println!("  Insert:");
             for hook in &hooks.insert {
