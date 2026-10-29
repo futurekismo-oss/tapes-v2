@@ -14,3 +14,9 @@ A atomic, per-file dotfiles switcher
 - Linux
 - Some dotfiles (subject to change)
 - Git - for install command
+
+## Installation
+Nix
+```bash
+nix run github:futurekismo-oss/tapes-v2
+```
