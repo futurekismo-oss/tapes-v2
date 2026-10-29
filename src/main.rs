@@ -8,7 +8,7 @@ use clap::Parser;
 use cli::structs::Cli;
 use log::{info, LevelFilter};
 
-use cli::{insert, show, status, eject, structs::Commands};
+use cli::{insert, show, status, install, eject, structs::Commands};
 use state::AppState;
 use util::get_tapes_data_path;
 
@@ -31,6 +31,10 @@ fn main() -> Result<(), anyhow::Error> {
         } => insert::run(&mut app, name, path, dry_run, no_hooks, cli.quiet)?,
         Commands::Status => status::show(app, cli.verbose)?,
         Commands::Eject { dry_run, no_hooks } => eject::run(&mut app, dry_run, no_hooks, cli.quiet)?,
+      
+        Commands::Install { source, name, branch } => {
+            install::run(&source, name.as_deref(), branch.as_deref())?
+        }
         _ => todo!(),
     }
 

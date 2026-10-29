@@ -7,7 +7,7 @@ A atomic, per-file dotfiles switcher
 - [x] insert command
 - [x] eject command
 - [x] status command
-- [ ] install command - install a tape to ~/.tapes from any repo
+- [x] install command - install a tape to ~/.tapes from any repo
 - [ ] unit and integration tests
 
 ## Dependencies
