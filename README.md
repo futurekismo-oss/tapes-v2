@@ -17,7 +17,7 @@ Most dotfile managers (like GNU Stow or manual symlink managers) operate file-by
 
 1. **Zero Half-States**: Tapes constructs your entire new config tree off to the side in a staging directory (`~/.config.tapes`).
 2. **Atomic Kernel Swap**: It swaps your active `~/.config` and the staged directory in a single, instantaneous syscall (`renameat2` with `RENAME_EXCHANGE`).
-3. **Safe, Instant Rollback**: Run `tape eject`, and your original configuration is atomically swapped right back. Your real files are never modified, overwritten, or deleted.
+3. **Safe, Instant Rollback**: Run `tapes-v2 eject`, and your original configuration is atomically swapped right back. Your real files are never modified, overwritten, or deleted.
 
 ```
    Existing Config                 Staged Overlay                   After Atomic Swap
@@ -38,21 +38,26 @@ Most dotfile managers (like GNU Stow or manual symlink managers) operate file-by
 Install a tape, insert it into your desktop, and eject when you want your old setup back:
 
 ```bash
-# 1. Install a community tape (from GitHub or local folder)
-tape install futurekismo-oss/neon-testing --name neon
+# 1. Install a tape (from GitHub or a local directory)
+tapes-v2 install futurekismo-oss/tapes-v2 --name demo
+
+# Or install your own local folder:
+# tapes-v2 install ~/my-dotfiles --name my-tape
 
 # 2. Inspect the tape and see what it overrides
-tape show neon
+tapes-v2 show demo
 
 # 3. Insert the tape (atomically switches your config and runs reload hooks)
-tape insert neon
+tapes-v2 insert demo
 
 # 4. Check active status
-tape status
+tapes-v2 status
 
 # 5. Revert back to your original setup like nothing happened
-tape eject
+tapes-v2 eject
 ```
+
+> 💡 **Tip:** Add `alias tape="tapes-v2"` to your `~/.bashrc` or `~/.zshrc` to use `tape` as a convenient shortcut!
 
 ---
 
@@ -88,80 +93,82 @@ cargo install --path .
 
 ## 🛠️ Command Reference
 
-### `tape install <SOURCE>`
+### `tapes-v2 install <SOURCE>`
 Downloads or copies a tape into your local library (`~/.tapes/`).
-- Accepts **GitHub shorthands** (`owner/repo`), **full Git URLs** (`https://...` or `git@...`), or **local directories** (`~/my-dots`, `./path`).
-- Automatically generates an example `tape.toml` if the repository lacks one.
+- **Public Repositories**: Use GitHub shorthand (`owner/repo`) or HTTPS URLs (`https://github.com/...`). Clones instantly without login prompts.
+- **Private Repositories**: Use SSH URLs (`git@github.com:owner/repo.git`) to clone using your local SSH keys.
+- **Local Folders**: Use any folder path (`~/my-dots`, `./path`).
+- Automatically generates an example `tape.toml` with commented hooks if the source lacks one.
 
 ```bash
-# From GitHub shorthand
-tape install user/hypr-dots
+# 1. Public GitHub shorthand
+tapes-v2 install user/hypr-dots
 
-# From full Git URL with a custom name
-tape install https://github.com/user/dots.git --name catppuccin
+# 2. Private repository via SSH (uses your ~/.ssh keys)
+tapes-v2 install git@github.com:user/private-dots.git --name work-theme
 
-# From a specific branch
-tape install user/dots -b dev
+# 3. Full Git URL with custom name and specific branch
+tapes-v2 install https://github.com/user/dots.git --name catppuccin -b dev
 
-# From a local directory
-tape install ~/Downloads/cool-theme --name cool-theme
+# 4. Local directory
+tapes-v2 install ~/Downloads/cool-theme --name cool-theme
 ```
 
 ---
 
-### `tape insert [NAME]`
+### `tapes-v2 insert [NAME]`
 Atomically swaps the specified tape into your active `~/.config`.
 - Resolves all targets: folders/files provided by the tape override your current config; any configs the tape does not touch are preserved.
 - Automatically executes `[hooks.insert]` (e.g. window manager/bar reloads).
 
 ```bash
 # Insert a tape from your ~/.tapes library
-tape insert neon
+tapes-v2 insert demo
 
 # Test with a dry run (shows the plan without touching the filesystem)
-tape insert neon --dry-run
+tapes-v2 insert demo --dry-run
 
 # Insert without running hook scripts
-tape insert neon --no-hooks
+tapes-v2 insert demo --no-hooks
 ```
 
 ---
 
-### `tape eject`
+### `tapes-v2 eject`
 Atomically restores your original `~/.config` and cleanly deletes the staging directory.
 - Runs `[hooks.eject]` commands to reset running desktop components.
 
 ```bash
 # Revert back to default configuration
-tape eject
+tapes-v2 eject
 
 # Dry-run test
-tape eject --dry-run
+tapes-v2 eject --dry-run
 ```
 
 ---
 
-### `tape status`
+### `tapes-v2 status`
 Displays the currently active tape, its source path, and target link records.
 
 ```bash
-tape status
+tapes-v2 status
 
 # Detailed verbose view
-tape status -v
+tapes-v2 status -v
 ```
 
 ---
 
-### `tape show [NAME]`
+### `tapes-v2 show [NAME]`
 Lists all installed tapes in `~/.tapes`, or inspects a specific tape's manifest, description, and hooks.
 
 ```bash
 # List all tapes in ~/.tapes
-tape show
+tapes-v2 show
 
 # Inspect manifest details for a tape
-tape show neon
+tapes-v2 show demo
 ```
 
 ---
