@@ -1,22 +1,30 @@
-name: Rust
+name: Rust Build and Release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+      - 'v*' # Triggers on tags like v0.1.0, v1.0.0
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create releases and attach binary artifacts
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    # - name: Run tests # No tests yet
-    #   run: cargo test --verbose
+
+    - name: Build (Release Mode)
+      run: cargo build --release --verbose
+
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Replace 'your_project_name' with the actual binary name from your Cargo.toml
+        gh release create ${{ github.ref_name }} target/release/tapes-v2 \
+          --title "Release ${{ github.ref_name }}" \
+          --generate-notes
