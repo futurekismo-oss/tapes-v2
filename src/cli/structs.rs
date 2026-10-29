@@ -55,13 +55,16 @@ pub enum Commands {
     },
 
     // TODO: Plans for install and commit command
-    // Install,
+    /// Install a tape from a local path or Git repository into ~/.tapes.
     Install {
+        /// Local directory path or Git repository URL / shorthand (user/repo).
         source: String,
 
+        /// Custom name for the tape (defaults to folder or repository name).
         #[arg(short, long)]
         name: Option<String>,
 
+        /// Specific branch, tag, or commit to clone (for Git repositories).
         #[arg(short, long)]
         branch: Option<String>,
     },
