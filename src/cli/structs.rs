@@ -51,6 +51,7 @@ pub enum Commands {
 
     /// List library tapes or detail one.
     Show {
+        /// Name of tape
         name: Option<String>,
     },
 
