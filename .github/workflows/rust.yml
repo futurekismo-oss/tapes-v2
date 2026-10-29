@@ -20,17 +20,19 @@ jobs:
     - name: Build (Release Mode)
       run: cargo build --release --verbose
 
-    - name: Create Archive and GitHub Release
+    - name: Package and Release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        ARCHIVE_NAME="tapes-v2-x86_64-unknown-linux-gnu-${{ github.ref_name }}"
+        RAW_BIN="tapes-v2-x86_64-unknown-linux-gnu"
+        ARCHIVE_NAME="${RAW_BIN}-${{ github.ref_name }}"
+        
+        cp target/release/tapes-v2 "$RAW_BIN"
 
         mkdir -p "$ARCHIVE_NAME"
         cp target/release/tapes-v2 "$ARCHIVE_NAME/"
-
         tar -czf "${ARCHIVE_NAME}.tgz" "$ARCHIVE_NAME"
 
-        gh release create ${{ github.ref_name }} "${ARCHIVE_NAME}.tgz" \
+        gh release create ${{ github.ref_name }} "$RAW_BIN" "${ARCHIVE_NAME}.tgz" \
           --title "Release ${{ github.ref_name }}" \
           --generate-notes
