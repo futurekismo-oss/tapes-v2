@@ -2,6 +2,11 @@
 name = "tapes-v2"
 version = "0.1.0-beta"
 edition = "2024"
+description = "Atomic per-target dotfile switcher"
+license = "MIT"                 
+repository = "https://github.com/futurekismo-oss/tapes-v2"
+homepage = "https://github.com/futurekismo-oss/tapes-v2"
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.104"
@@ -21,3 +26,8 @@ codegen-units = 1
 strip = "symbols"
 panic = "abort"
 
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }-v{ version }{ archive-suffix }"
+bin-dir = "{ name }-{ target }-v{ version }/{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
+disabled-strategies = ["quick-install", "compile"]
