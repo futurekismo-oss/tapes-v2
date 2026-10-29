@@ -20,3 +20,7 @@ Nix
 ```bash
 nix run github:futurekismo-oss/tapes-v2
 ```
+or this command
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/futurekismo-oss/tapes-v2/refs/heads/main/install.sh)
+```
