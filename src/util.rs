@@ -1,5 +1,5 @@
 use std::{
-    io,
+    fs, io,
     path::{Path, PathBuf},
 };
 
@@ -73,6 +73,23 @@ pub fn save_state_data(data: &mut AppState) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
+    let mut detected: Vec<PathBuf> = Vec::new();
+
+    for target in fs::read_dir(path)? {
+        let target = target?;
+        const IGNORED: &[&str] = &["tape.toml", ".git", "README.md", ".github"];
+
+        if let Some(name) = target.file_name().to_str() {
+            if !IGNORED.contains(&name) {
+                detected.push(target.path());
+            }
+        }
+    }
+
+    Ok(detected)
+}
+
 pub fn atomic_swap<P: AsRef<Path>, Q: AsRef<Path>>(path1: P, path2: Q) -> io::Result<()> {
     renameat2(
         None, // Uses AT_FDCWD (relative to current working directory)
@@ -99,7 +116,6 @@ pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
     }
     info!("{:?} exists", tapes_config_dir);
 
-
     let marker_path = config_dir.join(".tapes-managed");
     if !marker_path.exists() {
         bail!("{config_dir:?} is not managed by tapes")
@@ -107,4 +123,16 @@ pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
     info!("{:?} exists", marker_path);
 
     Ok(())
+}
+
+pub fn yes_or_no_prompt(message: &str) -> bool {
+    use std::io::Write;
+
+    print!("{} (y/n): ", message);
+    std::io::stdout().flush().unwrap();
+
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+
+    input.trim().to_lowercase() == "y"
 }

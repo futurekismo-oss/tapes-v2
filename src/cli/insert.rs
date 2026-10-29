@@ -1,5 +1,11 @@
 use crate::{
-    AppState, cli::eject::{self, eject_tapes}, toml::TapeManifest, util::{atomic_swap, get_tapes_data, get_tapes_default_path, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
+    cli::eject::{self, eject_tapes},
+    toml::TapeManifest,
+    util::{
+        atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest,
+        save_state_data, validate_correct_tapes_dir_structure, yes_or_no_prompt,
+    },
+    AppState,
 };
 use anyhow::bail;
 use dirs::{config_dir, home_dir};
@@ -28,9 +34,11 @@ pub fn run(
     let home = home_dir().expect("Home dir should exist");
     let new_config_dir = home.join(".config.tapes");
 
-    println!("config: {:?}\n new_config_dir: {:?}", config_dir, new_config_dir); 
-
     if app.active_tape.is_some() && !dry_run {
+        if !yes_or_no_prompt("Another tape is currently inserted.\nEject?") {
+            bail!("Another tape is currently inserted, doing nothing, exiting");
+        };
+
         eject_tapes(app, &config_dir, &new_config_dir)?;
     }
 
@@ -75,6 +83,11 @@ pub fn run(
     }
     info!("atomic swapped: {config_dir:?} -> {new_config_dir:?}");
 
+    println!(
+        "Inserted: {}",
+        app.active_tape.as_deref().unwrap().to_string()
+    );
+
     save_state_data(app)?;
 
     Ok(())
@@ -100,23 +113,6 @@ fn resolve_tape(
     }
 
     anyhow::bail!("No path provided and no tape.toml found in the current directory")
-}
-
-fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
-    let mut detected: Vec<PathBuf> = Vec::new();
-
-    for target in fs::read_dir(path)? {
-        let target = target?;
-        const IGNORED: &[&str] = &["tape.toml", ".git", "README.md", ".github"];
-
-        if let Some(name) = target.file_name().to_str() {
-            if !IGNORED.contains(&name) {
-                detected.push(target.path());
-            }
-        }
-    }
-
-    Ok(detected)
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
