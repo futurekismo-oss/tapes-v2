@@ -7,13 +7,18 @@ use log::info;
 use crate::{
     hooks::run_hooks,
     util::{
-        atomic_swap, get_tapes_data, load_manifest, save_state_data,
+        atomic_swap, load_manifest, save_state_data,
         validate_correct_tapes_dir_structure,
     },
     AppState,
 };
 
-pub fn run(app: &mut AppState, dry_run: bool, no_hooks: bool) -> Result<(), anyhow::Error> {
+pub fn run(
+    app: &mut AppState,
+    dry_run: bool,
+    no_hooks: bool,
+    quiet: bool,
+) -> Result<(), anyhow::Error> {
     info!("eject command");
 
     let home_dir = home_dir().expect("home dir should exist");
@@ -34,7 +39,7 @@ pub fn run(app: &mut AppState, dry_run: bool, no_hooks: bool) -> Result<(), anyh
         return Ok(());
     }
 
-    eject_tapes(app, &config_dir, &tapes_config_dir)?;
+    eject_tapes(app, &config_dir, &tapes_config_dir, quiet)?;
     println!("ejected: {}", tape_name.to_string());
 
     save_state_data(app)?;
@@ -47,7 +52,7 @@ pub fn run(app: &mut AppState, dry_run: bool, no_hooks: bool) -> Result<(), anyh
             }
 
             println!("Running hooks");
-            run_hooks(hooks.eject)
+            run_hooks(hooks.eject, quiet)
                 .map_err(|error| anyhow::anyhow!("Failed to run eject hooks: {}", error))?;
         }
     }
@@ -59,21 +64,31 @@ pub fn eject_tapes(
     app: &mut AppState,
     config_dir: &Path,
     tapes_config_dir: &Path,
+    quiet: bool,
 ) -> Result<(), anyhow::Error> {
     validate_correct_tapes_dir_structure()?; // Valiade twice for maximum safety
 
     app.eject()?;
     info!("cleared AppState");
-    println!("removed {tapes_config_dir:?}");
+
+    if !quiet {
+        println!("removed {tapes_config_dir:?}");
+    }
 
     atomic_swap(&config_dir, &tapes_config_dir).context("atomic swap failed, your original config is untouched, you can delete .config and rename .config.tapes to .config to get your config back")?;
     info!("swaped {config_dir:?} -> {tapes_config_dir:?}");
-    println!("swaped {config_dir:?} -> {tapes_config_dir:?}");
+
+    if !quiet {
+        println!("swaped {config_dir:?} -> {tapes_config_dir:?}");
+    }
 
     fs::remove_dir_all(&tapes_config_dir)
         .context("failed to remove .config.tapes, you can remove it manually")?;
     info!("removed {tapes_config_dir:?}");
-    println!("removed {tapes_config_dir:?}");
+
+    if !quiet {
+        println!("removed {tapes_config_dir:?}");
+    }
 
     Ok(())
 }

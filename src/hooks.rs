@@ -1,17 +1,19 @@
-use std::{env, process::Command};
 use anyhow::{anyhow, Result};
+use std::{env, process::Command};
 
-pub fn run_hooks(hooks: Vec<String>) -> Result<(), anyhow::Error> {
+pub fn run_hooks(hooks: Vec<String>, quiet: bool) -> Result<(), anyhow::Error> {
     for hook in hooks {
         let hook = hook.trim();
-        
-        println!("running '{}'", hook);       
+
+        if !quiet {
+            println!(" - '{}'", hook);
+        }
+
         run_command(hook)?;
     }
-    
+
     Ok(())
 }
-
 
 pub fn run_command(command: &str) -> Result<(), anyhow::Error> {
     let shell = get_user_preferred_shell();

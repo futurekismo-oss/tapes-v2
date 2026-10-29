@@ -27,6 +27,7 @@ pub fn run(
     path: Option<PathBuf>,
     dry_run: bool,
     no_hooks: bool,
+    quiet: bool,
 ) -> Result<(), anyhow::Error> {
     info!("starting insert command");
     info!("Current tapes: {:?}", app.active_tape);
@@ -40,7 +41,7 @@ pub fn run(
             bail!("Another tape is currently inserted, doing nothing, exiting");
         };
 
-        eject_tapes(app, &config_dir, &new_config_dir)?;
+        eject_tapes(app, &config_dir, &new_config_dir, quiet)?;
     }
 
     let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
@@ -73,7 +74,10 @@ pub fn run(
     File::create(&marker_path)?;
     info!("Created: {marker_path:?}");
 
-    if let Err(err) = symlink_targets(app.targets.as_ref().expect("app.targets should exist")) {
+    if let Err(err) = symlink_targets(
+        app.targets.as_ref().expect("app.targets should exist"),
+        quiet,
+    ) {
         error!("symlink_targets failed: {err}");
         return Err(err);
     }
@@ -94,10 +98,10 @@ pub fn run(
     if !no_hooks {
         if let Some(hooks) = manifest.hooks {
             if hooks.insert.is_empty() {
-               return Ok(());
+                return Ok(());
             }
             println!("Running hooks");
-            run_hooks(hooks.insert)
+            run_hooks(hooks.insert, quiet)
                 .map_err(|error| anyhow::anyhow!("Failed to run insert hooks: {}", error))?;
         }
     }
@@ -172,7 +176,10 @@ fn map_target(target_path: PathBuf, new_config_dir: &Path, from_tapes: bool) -> 
     (target_name, target)
 }
 
-fn symlink_targets(targets_map: &HashMap<String, Target>) -> Result<(), anyhow::Error> {
+fn symlink_targets(
+    targets_map: &HashMap<String, Target>,
+    quiet: bool,
+) -> Result<(), anyhow::Error> {
     let targets: Vec<&Target> = targets_map.values().collect();
 
     for target in &targets {
@@ -184,10 +191,12 @@ fn symlink_targets(targets_map: &HashMap<String, Target>) -> Result<(), anyhow::
             continue;
         }
 
-        println!(
-            "symlinking {:?} -> {:?}",
-            target.target_path, target.symlink_dest
-        );
+        if !quiet {
+            println!(
+                "symlinking {:?} -> {:?}",
+                target.target_path, target.symlink_dest
+            );
+        }
     }
 
     Ok(())
