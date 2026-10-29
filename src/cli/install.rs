@@ -1,10 +1,8 @@
 use anyhow::{bail, Context};
 use dirs::home_dir;
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{fs, path::Path, process::Command};
+
+use crate::util::resolve_home_dir_tilde;
 
 pub fn run(source: &str, name: Option<&str>, branch: Option<&str>) -> Result<(), anyhow::Error> {
     let source_path = resolve_home_dir_tilde(source);
