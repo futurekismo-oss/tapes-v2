@@ -54,7 +54,6 @@ pub enum Commands {
         name: Option<String>,
     },
 
-    // TODO: Plans for install and commit command
     /// Install a tape from a local path or Git repository into ~/.tapes.
     Install {
         /// Local directory path or Git repository URL / shorthand (user/repo).
@@ -68,6 +67,7 @@ pub enum Commands {
         #[arg(short, long)]
         branch: Option<String>,
     },
+
     Commit,
        
 }
