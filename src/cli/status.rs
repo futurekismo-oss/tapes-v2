@@ -1,7 +1,7 @@
 use anyhow::bail;
 
 use crate::{
-    cli::show::{self, display_tape_info},
+    cli::show::{display_tape_info},
     state::AppState,
     util::{load_manifest, validate_correct_tapes_dir_structure},
 };

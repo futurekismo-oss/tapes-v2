@@ -2,6 +2,7 @@ mod cli;
 pub mod state;
 pub mod toml;
 pub mod util;
+pub mod hooks;
 
 use clap::Parser;
 use cli::structs::Cli;

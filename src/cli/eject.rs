@@ -5,7 +5,11 @@ use dirs::{config_dir, home_dir};
 use log::info;
 
 use crate::{
-    util::{atomic_swap, save_state_data, validate_correct_tapes_dir_structure},
+    hooks::run_hooks,
+    util::{
+        atomic_swap, get_tapes_data, load_manifest, save_state_data,
+        validate_correct_tapes_dir_structure,
+    },
     AppState,
 };
 
@@ -19,6 +23,7 @@ pub fn run(app: &mut AppState, dry_run: bool, no_hooks: bool) -> Result<(), anyh
     validate_correct_tapes_dir_structure().context("No tapes is currently inserted")?;
 
     let tape_name = app.active_tape.clone().expect("should exist");
+    let tapes_path = app.path.clone().expect("app.path should exist");
 
     if dry_run {
         println!("swaped {config_dir:?} -> {tapes_config_dir:?}");
@@ -33,6 +38,19 @@ pub fn run(app: &mut AppState, dry_run: bool, no_hooks: bool) -> Result<(), anyh
     println!("ejected: {}", tape_name.to_string());
 
     save_state_data(app)?;
+
+    let manifest = load_manifest(&tapes_path)?;
+    if !no_hooks {
+        if let Some(hooks) = manifest.hooks {
+            if hooks.eject.is_empty() {
+                return Ok(());
+            }
+
+            println!("Running hooks");
+            run_hooks(hooks.eject)
+                .map_err(|error| anyhow::anyhow!("Failed to run eject hooks: {}", error))?;
+        }
+    }
 
     Ok(())
 }
@@ -52,7 +70,8 @@ pub fn eject_tapes(
     info!("swaped {config_dir:?} -> {tapes_config_dir:?}");
     println!("swaped {config_dir:?} -> {tapes_config_dir:?}");
 
-    fs::remove_dir_all(&tapes_config_dir).context("failed to remove .config.tapes, you can remove it manually")?;
+    fs::remove_dir_all(&tapes_config_dir)
+        .context("failed to remove .config.tapes, you can remove it manually")?;
     info!("removed {tapes_config_dir:?}");
     println!("removed {tapes_config_dir:?}");
 

@@ -1,9 +1,10 @@
 use crate::{
-    cli::eject::{self, eject_tapes},
+    cli::eject::eject_tapes,
+    hooks::run_hooks,
     toml::TapeManifest,
     util::{
         atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest,
-        save_state_data, validate_correct_tapes_dir_structure, yes_or_no_prompt,
+        save_state_data, yes_or_no_prompt,
     },
     AppState,
 };
@@ -90,10 +91,21 @@ pub fn run(
 
     save_state_data(app)?;
 
+    if !no_hooks {
+        if let Some(hooks) = manifest.hooks {
+            if hooks.insert.is_empty() {
+               return Ok(());
+            }
+            println!("Running hooks");
+            run_hooks(hooks.insert)
+                .map_err(|error| anyhow::anyhow!("Failed to run insert hooks: {}", error))?;
+        }
+    }
+
     Ok(())
 }
 
-fn resolve_tape(
+pub fn resolve_tape(
     name: Option<&String>,
     path: Option<PathBuf>,
 ) -> anyhow::Result<(PathBuf, TapeManifest)> {
