@@ -11,6 +11,10 @@ pub struct Cli {
     /// Increase the verbosity of some commands
     #[arg(short, long, global = true)]
     pub verbose: bool,
+
+    /// Reduce the verbosity of commands
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
   
     #[command(subcommand)]
     pub command: Commands

@@ -1,5 +1,12 @@
 use crate::{
-    AppState, cli::eject::{self, eject_tapes}, toml::TapeManifest, util::{atomic_swap, get_tapes_data, get_tapes_default_path, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
+    cli::eject::eject_tapes,
+    hooks::run_hooks,
+    toml::TapeManifest,
+    util::{
+        atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest,
+        save_state_data, yes_or_no_prompt,
+    },
+    AppState,
 };
 use anyhow::bail;
 use dirs::{config_dir, home_dir};
@@ -20,6 +27,7 @@ pub fn run(
     path: Option<PathBuf>,
     dry_run: bool,
     no_hooks: bool,
+    quiet: bool,
 ) -> Result<(), anyhow::Error> {
     info!("starting insert command");
     info!("Current tapes: {:?}", app.active_tape);
@@ -28,10 +36,12 @@ pub fn run(
     let home = home_dir().expect("Home dir should exist");
     let new_config_dir = home.join(".config.tapes");
 
-    println!("config: {:?}\n new_config_dir: {:?}", config_dir, new_config_dir); 
-
     if app.active_tape.is_some() && !dry_run {
-        eject_tapes(app, &config_dir, &new_config_dir)?;
+        if !yes_or_no_prompt("Another tape is currently inserted.\nEject?") {
+            bail!("Another tape is currently inserted, doing nothing, exiting");
+        };
+
+        eject_tapes(app, &config_dir, &new_config_dir, quiet)?;
     }
 
     let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
@@ -64,7 +74,10 @@ pub fn run(
     File::create(&marker_path)?;
     info!("Created: {marker_path:?}");
 
-    if let Err(err) = symlink_targets(app.targets.as_ref().expect("app.targets should exist")) {
+    if let Err(err) = symlink_targets(
+        app.targets.as_ref().expect("app.targets should exist"),
+        quiet,
+    ) {
         error!("symlink_targets failed: {err}");
         return Err(err);
     }
@@ -75,12 +88,28 @@ pub fn run(
     }
     info!("atomic swapped: {config_dir:?} -> {new_config_dir:?}");
 
+    println!(
+        "Inserted: {}",
+        app.active_tape.as_deref().unwrap().to_string()
+    );
+
     save_state_data(app)?;
+
+    if !no_hooks {
+        if let Some(hooks) = manifest.hooks {
+            if hooks.insert.is_empty() {
+                return Ok(());
+            }
+            println!("Running hooks");
+            run_hooks(hooks.insert, quiet)
+                .map_err(|error| anyhow::anyhow!("Failed to run insert hooks: {}", error))?;
+        }
+    }
 
     Ok(())
 }
 
-fn resolve_tape(
+pub fn resolve_tape(
     name: Option<&String>,
     path: Option<PathBuf>,
 ) -> anyhow::Result<(PathBuf, TapeManifest)> {
@@ -100,23 +129,6 @@ fn resolve_tape(
     }
 
     anyhow::bail!("No path provided and no tape.toml found in the current directory")
-}
-
-fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
-    let mut detected: Vec<PathBuf> = Vec::new();
-
-    for target in fs::read_dir(path)? {
-        let target = target?;
-        const IGNORED: &[&str] = &["tape.toml", ".git", "README.md", ".github"];
-
-        if let Some(name) = target.file_name().to_str() {
-            if !IGNORED.contains(&name) {
-                detected.push(target.path());
-            }
-        }
-    }
-
-    Ok(detected)
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -164,7 +176,10 @@ fn map_target(target_path: PathBuf, new_config_dir: &Path, from_tapes: bool) -> 
     (target_name, target)
 }
 
-fn symlink_targets(targets_map: &HashMap<String, Target>) -> Result<(), anyhow::Error> {
+fn symlink_targets(
+    targets_map: &HashMap<String, Target>,
+    quiet: bool,
+) -> Result<(), anyhow::Error> {
     let targets: Vec<&Target> = targets_map.values().collect();
 
     for target in &targets {
@@ -176,10 +191,12 @@ fn symlink_targets(targets_map: &HashMap<String, Target>) -> Result<(), anyhow::
             continue;
         }
 
-        println!(
-            "symlinking {:?} -> {:?}",
-            target.target_path, target.symlink_dest
-        );
+        if !quiet {
+            println!(
+                "symlinking {:?} -> {:?}",
+                target.target_path, target.symlink_dest
+            );
+        }
     }
 
     Ok(())

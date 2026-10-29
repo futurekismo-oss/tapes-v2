@@ -2,6 +2,7 @@ mod cli;
 pub mod state;
 pub mod toml;
 pub mod util;
+pub mod hooks;
 
 use clap::Parser;
 use cli::structs::Cli;
@@ -27,14 +28,13 @@ fn main() -> Result<(), anyhow::Error> {
             path,
             dry_run,
             no_hooks,
-        } => insert::run(&mut app, name, path, dry_run, no_hooks)?,
+        } => insert::run(&mut app, name, path, dry_run, no_hooks, cli.quiet)?,
         Commands::Status => status::show(app, cli.verbose)?,
-        Commands::Eject { dry_run, no_hooks } => eject::run(&mut app, dry_run, no_hooks)?,
-
+        Commands::Eject { dry_run, no_hooks } => eject::run(&mut app, dry_run, no_hooks, cli.quiet)?,
+      
         Commands::Install { source, name, branch } => {
             install::run(&source, name.as_deref(), branch.as_deref())?
         }
-
         _ => todo!(),
     }
 

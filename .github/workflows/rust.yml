@@ -3,7 +3,7 @@ name: Rust Build and Release
 on:
   push:
     tags:
-      - 'v*' # Triggers on tags like v0.1.0, v1.0.0
+      - "v*"
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Required to create releases and attach binary artifacts
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
@@ -20,11 +20,19 @@ jobs:
     - name: Build (Release Mode)
       run: cargo build --release --verbose
 
-    - name: Create GitHub Release
+    - name: Package and Release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Replace 'your_project_name' with the actual binary name from your Cargo.toml
-        gh release create ${{ github.ref_name }} target/release/tapes-v2 \
+        RAW_BIN="tapes-v2-x86_64-unknown-linux-gnu"
+        ARCHIVE_NAME="${RAW_BIN}-${{ github.ref_name }}"
+        
+        cp target/release/tapes-v2 "$RAW_BIN"
+
+        mkdir -p "$ARCHIVE_NAME"
+        cp target/release/tapes-v2 "$ARCHIVE_NAME/"
+        tar -czf "${ARCHIVE_NAME}.tgz" "$ARCHIVE_NAME"
+
+        gh release create ${{ github.ref_name }} "$RAW_BIN" "${ARCHIVE_NAME}.tgz" \
           --title "Release ${{ github.ref_name }}" \
           --generate-notes
