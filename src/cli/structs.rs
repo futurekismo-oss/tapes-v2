@@ -51,7 +51,16 @@ pub enum Commands {
     },
 
     // TODO: Plans for install and commit command
-    Install,
+    // Install,
+    Install {
+        source: String,
+
+        #[arg(short, long)]
+        name: Option<String>,
+
+        #[arg(short, long)]
+        branch: Option<String>,
+    },
     Commit,
        
 }

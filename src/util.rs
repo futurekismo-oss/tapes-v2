@@ -59,11 +59,11 @@ pub fn get_tapes_data_path() -> Result<PathBuf, anyhow::Error> {
     let local_dir = data_dir().ok_or_else(|| anyhow::anyhow!("Could not get local dir"))?;
     let tapes_data_path = local_dir.join("tapes");
 
-    if tapes_data_path.exists() {
-        Ok(tapes_data_path)
-    } else {
-        bail!("{} does not exist", tapes_data_path.display().to_string())
+    if !tapes_data_path.exists() {
+        std::fs::create_dir_all(&tapes_data_path)?;
     }
+    
+    Ok(tapes_data_path)
 }
 
 pub fn save_state_data(data: &mut AppState) -> Result<(), anyhow::Error> {
@@ -108,3 +108,6 @@ pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
 
     Ok(())
 }
+
+
+
