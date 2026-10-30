@@ -124,6 +124,8 @@ eject = ["hyprctl reload"]    # run after eject
 
 Hooks are plain shell strings — write them exactly as you would type them in a terminal. Each runs through your login shell (`$SHELL -c`), one at a time, in the order listed. A non-zero exit stops the remaining hooks, but the swap itself is never undone.
 
+Trust note for people installing tapes you didn't write: hooks run with your full user privileges and Tapes deliberately adds no sandbox around them. Read a tape's `[hooks]` sections (`tapes-v2 show <name>`) before trusting it — the atomic swap is reversible, the commands it triggers are not.
+
 ---
 
 ## Notes For Editors

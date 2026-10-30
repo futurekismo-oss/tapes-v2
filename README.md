@@ -38,8 +38,9 @@ Tapes does the opposite: it builds your new config tree off to the side, then sw
 - **Your files are never touched** — the original config is never modified, overwritten, or deleted.
 
 That's the whole idea. If you want to know how the swap actually works, see [INTERNALS.md](INTERNALS.md).
-Basically this allows you to have several rapes and insert and eject them swapping your .config like you would do with somethjng like matugen. 
-only the configs that are provided in .tapes are overwritten meaning if tapes provides a quickshell config but doesnt provide a chromium or nvim one your new .config that tapes makes consists of the config from the old .config and the ones rape wants to override, this means you can try out a new quickshell or dotfiles without having to relogin to chromium or lose your nvim config 
+
+In day-to-day terms: keep as many tapes in your library as you like and insert and eject them at will — the workflow is like running `matugen`, except instead of regenerating colors it swaps entire config trees. And insertion is not a full reset: only the configs a tape actually provides are overridden, everything else from your old `~/.config` carries over. A tape that ships just a `quickshell/` config swaps only that — your Chromium profile stays logged in and your `nvim` config stays yours, no re-login, no expenses.
+
 ---
 
 ## Quickstart
@@ -67,6 +68,8 @@ tapes-v2 eject
 ```
 
 > Tip: add `alias tapes="tapes-v2"` to your `~/.bashrc` or `~/.zshrc` to use `tapes` as a shortcut.
+
+> **Before inserting a tape you didn't write, read it.** Hooks are arbitrary shell commands that run as your user the moment a swap lands — `hyprctl reload` is the friendly example, but a `tape.toml` can just as easily contain `rm -rf`. The swap itself is reversible; a hook command is not. `tapes-v2 show <name>` prints every hook a tape runs, and `insert --no-hooks` lets you test a tape without executing any of its commands first.
 
 ---
 
