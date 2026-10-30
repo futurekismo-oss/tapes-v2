@@ -1,8 +1,9 @@
 [package]
 name = "tapes-v2"
-version = "0.1.0-beta"
+version = "0.1.1-beta"
 descripton = "Swap your whole rice in one command. Eject it with one more. Atomic dotfiles switching for Linux."
 edition = "2024"
+description = "Swap your whole rice in one command. Eject it with one more. Atomic dotfiles switching for Linux."
 license = "MIT"
 repository = "https://github.com/futurekismo-oss/tapes-v2"
 homepage = "https://github.com/futurekismo-oss/tapes-v2"
