@@ -1,12 +1,7 @@
 use crate::{
-    cli::eject::eject_tapes,
-    hooks::run_hooks,
-    toml::TapeManifest,
-    util::{
-        atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest,
-        save_state_data, yes_or_no_prompt,
+    AppState, cli::eject::eject_tapes, hooks::run_hooks, toml::TapeManifest, util::{
+        atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest, save_state_data, yes_or_no_prompt,
     },
-    AppState,
 };
 use anyhow::bail;
 use dirs::{config_dir, home_dir};

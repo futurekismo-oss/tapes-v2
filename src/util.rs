@@ -137,11 +137,3 @@ pub fn yes_or_no_prompt(message: &str) -> bool {
     input.trim().to_lowercase() == "y"
 }
 
-pub fn resolve_home_dir_tilde(source: &str) -> PathBuf {
-    if let Some(stripped) = source.strip_prefix("~/") {
-        if let Some(home) = home_dir() {
-            return home.join(stripped);
-        }
-    }
-    return PathBuf::from(source);
-}

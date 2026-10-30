@@ -2,13 +2,9 @@ use anyhow::{bail, Context};
 use dirs::home_dir;
 use log::info;
 use std::{
-    fs,
-    path::Path,
-    process::Command,
-    time::{SystemTime, UNIX_EPOCH},
+    fs, path::{Path, PathBuf}, process::Command, time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::util::resolve_home_dir_tilde;
 
 pub fn run(
     source: &str,
@@ -16,7 +12,7 @@ pub fn run(
     branch: Option<String>,
     dir: Option<String>,
 ) -> Result<(), anyhow::Error> {
-    let source_path = resolve_home_dir_tilde(source);
+    let source_path = PathBuf::from(source);
 
     let is_path = source_path.exists();
 
