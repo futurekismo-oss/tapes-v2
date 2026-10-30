@@ -132,6 +132,10 @@ The short version:
 ```bash
 # Clone someone's rice and try it
 tapes-v2 install user/awesome-rice
+
+tapes-v2 install user/awesome-rice --dir dots # or from a specific folder in the repo
+tapes-v2 install user/awesome-rice --branch dots # or branch
+
 tapes-v2 insert awesome-rice
 
 # Don't like it? One command and nothing ever happened
