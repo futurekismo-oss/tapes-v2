@@ -91,7 +91,13 @@ nix run github:futurekismo-oss/tapes-v2 -- --help
 nix profile install github:futurekismo-oss/tapes-v2
 ```
 
-### Option 3: From source
+### Option 3: cargo binstall
+```bash
+# it is required to specify the version until tapes leaves beta
+cargo binstall tapes-v2@0.1.1-beta
+```
+
+### Option 4: From source
 
 ```bash
 git clone https://github.com/futurekismo-oss/tapes-v2.git
