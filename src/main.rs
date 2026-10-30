@@ -33,7 +33,7 @@ fn main() -> Result<(), anyhow::Error> {
         Commands::Eject { dry_run, no_hooks } => eject::run(&mut app, dry_run, no_hooks, cli.quiet)?,
       
         Commands::Install { source, name, branch } => {
-            install::run(&source, name.as_deref(), branch.as_deref())?
+            install::run(&source, name, branch)?
         }
         _ => todo!(),
     }

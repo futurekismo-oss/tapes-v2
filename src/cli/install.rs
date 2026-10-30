@@ -1,10 +1,15 @@
 use anyhow::{bail, Context};
 use dirs::home_dir;
+use log::info;
 use std::{fs, path::Path, process::Command};
 
 use crate::util::resolve_home_dir_tilde;
 
-pub fn run(source: &str, name: Option<&str>, branch: Option<&str>) -> Result<(), anyhow::Error> {
+pub fn run(
+    source: &str,
+    name: Option<String>,
+    branch: Option<String>,
+) -> Result<(), anyhow::Error> {
     let source_path = resolve_home_dir_tilde(source);
 
     let is_path = source_path.exists();
@@ -61,6 +66,8 @@ pub fn run(source: &str, name: Option<&str>, branch: Option<&str>) -> Result<(),
 
         // add the repo url and the path
         cmd.arg(&url).arg(&target_dir);
+
+        info!("git command: {:?}", cmd);
 
         let status = cmd.status().context("Failed to run git clone")?;
 
