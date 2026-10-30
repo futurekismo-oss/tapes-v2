@@ -1,7 +1,12 @@
 use anyhow::{bail, Context};
 use dirs::home_dir;
 use log::info;
-use std::{fs, path::Path, process::Command};
+use std::{
+    fs,
+    path::Path,
+    process::Command,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::util::resolve_home_dir_tilde;
 
@@ -9,26 +14,29 @@ pub fn run(
     source: &str,
     name: Option<String>,
     branch: Option<String>,
+    dir: Option<String>,
 ) -> Result<(), anyhow::Error> {
     let source_path = resolve_home_dir_tilde(source);
 
     let is_path = source_path.exists();
 
-    let tape_name = match name {
-        Some(n) => n.trim().to_string(),
-        None if is_path => source_path
+    let tape_name = if let Some(n) = name {
+        n.trim().to_string()
+    } else if is_path {
+        source_path
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("tape")
-            .to_string(),
-        // /.git removed -> user/repo .next() and unwrap for the name repo
-        None => source
+            .to_string()
+    // Get it from the repo if a path, dir or name is not provided
+    } else {
+        source
             .trim_end_matches('/')
             .trim_end_matches(".git")
             .rsplit('/')
             .next()
             .unwrap_or("tape")
-            .to_string(),
+            .to_string()
     };
 
     let home = home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
@@ -46,10 +54,30 @@ pub fn run(
     // create *all* the dir cuz first time users wont have the .tapes directory
     fs::create_dir_all(&tapes_dir)?;
 
+    // Temporary dir for cloning
+    let temp_clone_dir = tapes_dir.join(format!(
+        ".tmp-{}",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+
     // copy or clone based on whether exists or not
     if is_path {
         println!("Copying local tape '{tape_name}' from {source_path:?}...",);
-        copy_dir(&source_path, &target_dir)?;
+
+        // If a specific dir provided locally, resolve it
+        let src_to_copy = if let Some(ref d) = dir {
+            let sub = source_path.join(d);
+            if !sub.exists() {
+                bail!("Directory '{}' does not exist in source path", d);
+            }
+            sub
+        } else {
+            source_path
+        };
+        copy_dir(&src_to_copy, &target_dir)?;
     } else {
         // print cloning
         println!("Copying tape '{tape_name}' from {source}");
@@ -64,8 +92,14 @@ pub fn run(
             cmd.arg("--branch").arg(b);
         }
 
+        let clone_destination = if dir.is_some() {
+            &temp_clone_dir
+        } else {
+            &target_dir
+        };
+
         // add the repo url and the path
-        cmd.arg(&url).arg(&target_dir);
+        cmd.arg(&url).arg(&clone_destination);
 
         info!("git command: {:?}", cmd);
 
@@ -73,8 +107,24 @@ pub fn run(
 
         if !status.success() {
             // _ bcz anything happens we have to clean the half cloned git directory
+            let _ = fs::remove_dir_all(&temp_clone_dir);
             let _ = fs::remove_dir_all(&target_dir);
             bail!("git clone failed with status: {status}");
+        }
+
+        if let Some(ref d) = dir {
+            let d = d.trim_start_matches('/');
+            let sub = temp_clone_dir.join(d);
+
+            info!("Requested subdir: {sub:?}");
+
+            if !sub.exists() {
+                let _ = fs::remove_dir_all(&temp_clone_dir);
+                bail!("Directory '{}' does not exist in the cloned repository", d);
+            }
+            copy_dir(&sub, &target_dir)?;
+            // Remove the full temporary repository clone, keeping only the extracted subdirectory
+            let _ = fs::remove_dir_all(&temp_clone_dir);
         }
     }
 
@@ -142,11 +192,14 @@ fn copy_dir(source: &Path, destination: &Path) -> Result<(), anyhow::Error> {
     for entry in fs::read_dir(source)? {
         let entry = entry?;
         let path = entry.path();
-        // dont copy the .git
-        if entry.file_name() == ".git" {
+
+        // ignore specificed dir and files
+        if !path.exists() {
             continue;
         }
+
         let target = destination.join(entry.file_name());
+
         // recursive copy for all the subdirectories
         if path.is_dir() {
             copy_dir(&path, &target)?;

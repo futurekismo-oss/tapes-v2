@@ -67,6 +67,11 @@ pub enum Commands {
         /// Specific branch, tag, or commit to clone (for Git repositories).
         #[arg(short, long)]
         branch: Option<String>,
+
+        /// Specific dir from the Git repository
+        #[arg(short, long)]
+        dir: Option<String>,
+       
     },
 
     Commit,

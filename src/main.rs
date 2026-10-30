@@ -32,8 +32,8 @@ fn main() -> Result<(), anyhow::Error> {
         Commands::Status => status::show(app, cli.verbose)?,
         Commands::Eject { dry_run, no_hooks } => eject::run(&mut app, dry_run, no_hooks, cli.quiet)?,
       
-        Commands::Install { source, name, branch } => {
-            install::run(&source, name, branch)?
+        Commands::Install { source, name, branch, dir } => {
+            install::run(&source, name, branch, dir)?
         }
         _ => todo!(),
     }
