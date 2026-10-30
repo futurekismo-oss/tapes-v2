@@ -1,0 +1,33 @@
+# Maintainer: futurekismo-oss <futurekismo@gmail.com>
+# Upstream: https://github.com/futurekismo-oss/tapes-v2
+# This is the -bin package: installs the prebuilt binary shipped on
+# GitHub Releases, nothing is compiled. Release assets follow the
+# cargo-binstall artifact pattern declared in Cargo.toml.
+
+pkgname=tapes-v2-bin
+_upstream=0.1.1-beta          # real upstream version (may contain dashes)
+_target=x86_64-unknown-linux-gnu
+pkgver=${_upstream//-/}       # AUR pkgver must not contain dashes
+pkgrel=1
+pkgdesc="Atomic dotfiles switcher: swap whole desktop setups with one command, roll back with another (prebuilt binary)"
+arch=('x86_64')
+url="https://github.com/futurekismo-oss/tapes-v2"
+license=('MIT')
+depends=('glibc')
+provides=('tapes-v2')
+conflicts=('tapes-v2')
+# the release tarball ships only the binary, so the license comes from the tagged tree
+source=("tapes-v2-bin-$_upstream.tar.gz::https://github.com/futurekismo-oss/tapes-v2/releases/download/v$_upstream/tapes-v2-$_target-v$_upstream.tar.gz"
+        "tapes-v2-bin-$_upstream-License::https://raw.githubusercontent.com/futurekismo-oss/tapes-v2/v$_upstream/LICENSE")
+sha256sums=('76a2abe40b8c2aaa14d44f520e0c1eb6e4cb22c7f0423d1a8477194aef376970'
+            '33958a9cac02e9b9796325e4e8ba4c48e28761b51f0044affe4e688aca861f7c')
+
+# bump `_upstream` per release and recompute both sums:
+#   sha256sum tapes-v2-$_target-v$_upstream.tar.gz        (from the release page)
+#   sha256sum LICENSE                                     (from the tag's raw file)
+
+package() {
+    cd "tapes-v2-$_target-v$_upstream"
+    install -Dm0755 "tapes-v2" "$pkgdir/usr/bin/tapes-v2"
+    install -Dm0644 "$srcdir/tapes-v2-bin-$_upstream-License" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

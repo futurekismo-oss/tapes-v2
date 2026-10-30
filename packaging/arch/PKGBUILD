@@ -1,0 +1,29 @@
+# Maintainer: futurekismo-oss <futurekismo@gmail.com>
+# Upstream: https://github.com/futurekismo-oss/tapes-v2
+# This is the source package: builds from the crates.io sdist with cargo.
+
+pkgname=tapes-v2
+_upstream=0.1.1-beta        # published crates.io version; pkgver may not contain dashes
+pkgver=${_upstream//-/}
+pkgrel=1
+pkgdesc="Atomic dotfiles switcher: swap whole desktop setups with one command, roll back with another"
+arch=('x86_64')
+url="https://github.com/futurekismo-oss/tapes-v2"
+license=('MIT')
+depends=('glibc')
+makedepends=('cargo')
+source=("$pkgname-$_upstream.tar.gz::https://crates.io/api/v1/crates/$pkgname/$_upstream/download")
+# matches the checksum published on crates.io for this exact version
+sha256sums=('fc345246db7b89d657d48a32e71dccde7ebf59a09bec6b98a5c43476c995f03b')
+
+build() {
+    cd "$pkgname-$_upstream"
+    export CARGO_HOME="$srcdir/cargo-home"
+    cargo build --frozen --release
+}
+
+package() {
+    cd "$pkgname-$_upstream"
+    install -Dm0755 "target/release/$pkgname" -t "$pkgdir/usr/bin/"
+    install -Dm0644 "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
