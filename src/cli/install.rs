@@ -35,6 +35,8 @@ pub fn run(
             .to_string()
     };
 
+    let tape_name = tape_name.to_lowercase(); // Make the dir name lowercase, no matter what
+
     let home = home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
     let tapes_dir = home.join(".tapes");
     let target_dir = tapes_dir.join(&tape_name);
