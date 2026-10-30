@@ -38,7 +38,8 @@ Tapes does the opposite: it builds your new config tree off to the side, then sw
 - **Your files are never touched** — the original config is never modified, overwritten, or deleted.
 
 That's the whole idea. If you want to know how the swap actually works, see [INTERNALS.md](INTERNALS.md).
-
+Basically this allows you to have several rapes and insert and eject them swapping your .config like you would do with somethjng like matugen. 
+only the configs that are provided in .tapes are overwritten meaning if tapes provides a quickshell config but doesnt provide a chromium or nvim one your new .config that tapes makes consists of the config from the old .config and the ones rape wants to override, this means you can try out a new quickshell or dotfiles without having to relogin to chromium or lose your nvim config 
 ---
 
 ## Quickstart
