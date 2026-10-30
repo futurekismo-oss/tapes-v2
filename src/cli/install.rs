@@ -138,10 +138,13 @@ desc = "Tape installed from {source}"
 # [hooks]
 # insert = [
 #     # "hyprctl reload",
-#     # "pkill -SIGUSR2 waybar",
+#     # "pkill waybar",
+#     # "qs -c {tape_name}"
 # ]
 # eject = [
 #     # "hyprctl reload",
+#     # "qs kill",
+#     # "waybar &"
 # ]
 "#
         );
