@@ -173,7 +173,7 @@ insert = [
     "notify-send 'Tapes' 'Switched to Neon Dream!'",
 ]
 
-# Commands run when the tape is ejected
+# Commands run after the tape is ejected
 eject = [
     "hyprctl reload",
     "pkill -SIGUSR2 waybar",
