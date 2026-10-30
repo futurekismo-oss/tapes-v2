@@ -51,6 +51,9 @@ Install a tape, insert it into your desktop, and eject when you want your old se
 # 1. Install downloads or copies a tape into the library (~/.tapes/). It doesn't touch anything else yet
 tapes-v2 install https://github.com/username/some_dots --name demo
 
+tapes-v2 install https://github.com/username/some_dots --dir dots/.config # or from a specific folder in the repo
+tapes-v2 install https://github.com/username/some_dots --branch dots # or branch
+
 # Or from a local folder:
 # tapes-v2 install ~/my-dots --name demo
 
@@ -173,14 +176,17 @@ dependencies = ["hyprland", "waybar"]
 # Commands run right after the swap
 insert = [
     "hyprctl reload",
-    "pkill -SIGUSR2 waybar",
-    "notify-send 'Tapes' 'Switched to Neon Dream!'",
+    "qs kill",
+    "waybar &",
+    "notify-send 'Tapes' 'Switched to neon-dream!'",
 ]
 
 # Commands run after the tape is ejected
 eject = [
     "hyprctl reload",
-    "pkill -SIGUSR2 waybar",
+    "pkll waybar",
+    "qs -c caelestia",
+    "notify-send 'Tapes' 'Back to caelestia'",
 ]
 ```
 
