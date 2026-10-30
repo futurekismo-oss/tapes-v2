@@ -8,6 +8,7 @@
 
 An atomic dotfile switcher for ricing.
 Swap your whole setup in one command, get it back in one command.
+
 Rewritten to be safer, simpler and truly atomic
 
 <a href="https://github.com/futurekismo-oss/tapes-v2/issues/new">Report Bug</a>
