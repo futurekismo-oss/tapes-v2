@@ -78,7 +78,7 @@ pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
 
     for target in fs::read_dir(path)? {
         let target = target?;
-        const IGNORED: &[&str] = &["tape.toml", ".git", "README.md", ".github"];
+        const IGNORED: &[&str] = &["tape.toml", ".git", "README.md", ".github", ".gitignore", ".editorconfig", "LINCESE"];
 
         if let Some(name) = target.file_name().to_str() {
             if !IGNORED.contains(&name) {
