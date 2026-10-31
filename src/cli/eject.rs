@@ -1,15 +1,12 @@
 use std::{fs, path::Path};
 
-use anyhow::Context;
+use anyhow::{Context, bail};
 use dirs::{config_dir, home_dir};
 use log::info;
 
 use crate::{
     hooks::run_hooks,
-    util::{
-        atomic_swap, load_manifest, save_state_data,
-        validate_correct_tapes_dir_structure,
-    },
+    util::{atomic_swap, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
     AppState,
 };
 
@@ -82,8 +79,17 @@ pub fn eject_tapes(
         println!("swaped {config_dir:?} -> {tapes_config_dir:?}");
     }
 
-    fs::remove_dir_all(&tapes_config_dir)
-        .context("failed to remove .config.tapes, you can remove it manually")?;
+    // Eject can remove data unfornately?
+    // but i can write a safety check
+
+    // Now it will only remove the dir, after its ensure .tapes owns it
+    if tapes_config_dir.join(".tapes-managed").exists() {
+        fs::remove_dir_all(&tapes_config_dir)
+            .context("failed to remove .config.tapes, you can remove it manually")?;
+    } else {
+        bail!("{tapes_config_dir:?} was not removed, as tapes doesnt not manage it (.tapes-managed not found)")
+    }
+
     info!("removed {tapes_config_dir:?}");
 
     if !quiet {
