@@ -1,13 +1,11 @@
 use std::{fs, path::Path};
 
-use anyhow::{Context, bail};
+use anyhow::{bail, Context};
 use dirs::{config_dir, home_dir};
-use log::info;
+use log::{error, info};
 
 use crate::{
-    hooks::run_hooks,
-    util::{atomic_swap, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
-    AppState,
+    AppState, hooks::{run_eject_hooks, run_hooks}, toml::TapeManifest, util::{atomic_swap, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
 };
 
 pub fn run(
@@ -25,7 +23,6 @@ pub fn run(
     validate_correct_tapes_dir_structure().context("No tapes is currently inserted")?;
 
     let tape_name = app.active_tape.clone().expect("should exist");
-    let tapes_path = app.path.clone().expect("app.path should exist");
 
     if dry_run {
         println!("swaped {config_dir:?} -> {tapes_config_dir:?}");
@@ -36,23 +33,8 @@ pub fn run(
         return Ok(());
     }
 
-    eject_tapes(app, &config_dir, &tapes_config_dir, quiet)?;
-    println!("ejected: {}", tape_name.to_string());
-
+    eject_tapes(app, &config_dir, &tapes_config_dir, quiet, no_hooks)?;
     save_state_data(app)?;
-
-    let manifest = load_manifest(&tapes_path)?;
-    if !no_hooks {
-        if let Some(hooks) = manifest.hooks {
-            if hooks.eject.is_empty() {
-                return Ok(());
-            }
-
-            println!("Running hooks");
-            run_hooks(hooks.eject, quiet)
-                .map_err(|error| anyhow::anyhow!("Failed to run eject hooks: {}", error))?;
-        }
-    }
 
     Ok(())
 }
@@ -62,8 +44,14 @@ pub fn eject_tapes(
     config_dir: &Path,
     tapes_config_dir: &Path,
     quiet: bool,
+    no_hooks: bool,
 ) -> Result<(), anyhow::Error> {
     validate_correct_tapes_dir_structure()?; // Valiade twice for maximum safety
+
+    // manifest should be cleared before app data is removed by app.eject
+    // so this should stay about app.eject()
+    let tapes_path = app.path.clone().expect("app.path should exist");
+    let manifest = load_manifest(&tapes_path)?;
 
     app.eject()?;
     info!("cleared AppState");
@@ -96,5 +84,9 @@ pub fn eject_tapes(
         println!("removed {tapes_config_dir:?}");
     }
 
+    run_eject_hooks(manifest, no_hooks, quiet)?;
+
     Ok(())
 }
+
+
