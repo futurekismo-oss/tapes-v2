@@ -25,7 +25,7 @@ pub fn run(
     let tape_name = app.active_tape.clone().expect("should exist");
 
     if dry_run {
-        println!("swaped {config_dir:?} -> {tapes_config_dir:?}");
+        println!("swapped {config_dir:?} -> {tapes_config_dir:?}");
         println!("removed {tapes_config_dir:?}");
         println!("cleared AppState");
         println!("ejected: {}", tape_name.to_string());
@@ -61,10 +61,10 @@ pub fn eject_tapes(
     }
 
     atomic_swap(&config_dir, &tapes_config_dir).context("atomic swap failed, your original config is untouched, you can delete .config and rename .config.tapes to .config to get your config back")?;
-    info!("swaped {config_dir:?} -> {tapes_config_dir:?}");
+    info!("swapped {config_dir:?} -> {tapes_config_dir:?}");
 
     if !quiet {
-        println!("swaped {config_dir:?} -> {tapes_config_dir:?}");
+        println!("swapped {config_dir:?} -> {tapes_config_dir:?}");
     }
 
     // Eject can remove data unfornately?

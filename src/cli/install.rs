@@ -201,7 +201,7 @@ fn copy_dir(source: &Path, destination: &Path) -> Result<(), anyhow::Error> {
         let entry = entry?;
         let path = entry.path();
 
-        // ignore specificed dir and files
+        // ignore specified dir and files
         if !path.exists() {
             continue;
         }

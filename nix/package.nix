@@ -14,7 +14,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   meta = {
     description = "Swap your whole rice in one command. Eject it with one more. Atomic dotfiles switching for Linux.";
     homepage = "https://github.com/futurekismo-oss/tapes-v2";
-    lincese = with lib.licenses; [
+    license = with lib.licenses; [
       mit
     ];
     maintainers = with lib.maintainers; [
