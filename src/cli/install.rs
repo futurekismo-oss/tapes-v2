@@ -165,7 +165,7 @@ desc = "Tape installed from {source}"
         let _ = fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(tapes_data.join("records.txt"))
+            .open(tapes_data.join("install_records.txt"))
             .and_then(|mut f| std::io::Write::write_all(&mut f, record.as_bytes()));
     }
 
