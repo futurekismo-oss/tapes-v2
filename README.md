@@ -43,6 +43,22 @@ In day-to-day terms: keep as many tapes in your library as you like and insert a
 
 ---
 
+## Tapes in Action
+
+<div align="center">
+
+<a href="https://github.com/futurekismo-oss/tapes-v2/blob/main/media/tapes-showcase.mp4">
+  <img src="media/logo.png" alt="Tapes showcase video" width="480">
+</a>
+
+**Swapping an entire desktop setup, in one command.**
+
+<sub>52 seconds — click the image to watch</sub>
+
+</div>
+
+---
+
 ## Quickstart
 
 Install a tape, insert it into your desktop, and eject when you want your old setup back:
