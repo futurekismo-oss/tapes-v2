@@ -222,7 +222,7 @@ Thanks to these wonderful individuals for
 
 [Mvk](https://github.com/Mvkweb) for providing words of encourgement and support
 
-Clover for providing the most encourgement and support, without them tapes wouldn't have gotten a rewrite and would have been the broken mess it was in Cassette-tapes, so massive thanks to him
+Clover[Cloverthestars] for providing the most encourgement and support, without them tapes wouldn't have gotten a rewrite and would have been the broken mess it was in Cassette-tapes, so massive thanks to him
 
 ---
 
