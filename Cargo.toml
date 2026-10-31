@@ -1,6 +1,6 @@
 [package]
 name = "tapes-v2"
-version = "0.1.2-beta"
+version = "0.1.3-beta"
 edition = "2024"
 description = "Swap your whole rice in one command. Eject it with one more. Atomic dotfiles switching for Linux."
 license = "MIT"

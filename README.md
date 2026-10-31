@@ -97,7 +97,7 @@ nix profile install github:futurekismo-oss/tapes-v2
 ### Option 3: cargo binstall
 ```bash
 # it is required to specify the version until tapes leaves beta
-cargo binstall tapes-v2@0.1.2-beta
+cargo binstall tapes-v2@0.1.3-beta
 ```
 
 ### Option 4: From source
