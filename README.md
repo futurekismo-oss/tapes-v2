@@ -206,13 +206,13 @@ Thanks to these wonderful individuals for
 
 [erotic-erox](https://github.com/exotic-erox) for calling out some lifecycle bugs on version 0.1.2-beta
 
-@LilaccFlowerr for providing the tapes-v2 showcase video and hopefully a gui in the future
+[LilaccFlowerr](https://github.com/LilaccFlowerr) for providing the tapes-v2 showcase video and hopefully a gui in the future
 
-@saksham_kumar for being a contributor and writing the beloved install command
+[saksham_kumar](https://github.com/saksham_kumar) for being a contributor and writing the beloved install command
 
 [Mvk](https://github.com/Mvkweb) for providing words of encourgement and support
 
-Clover[Cloverthestars] for providing the most encourgement and support, without them tapes wouldn't have gotten a rewrite and would have been the broken mess it was in Cassette-tapes, so massive thanks to him
+[Clover](https://github.com/Cloverthestars) for providing the most encourgement and support, without them tapes wouldn't have gotten a rewrite and would have been the broken mess it was in Cassette-tapes, so massive thanks to him
 
 ---
 
