@@ -2,10 +2,10 @@ use std::{fs, path::Path};
 
 use anyhow::{bail, Context};
 use dirs::{config_dir, home_dir};
-use log::{error, info};
+use log::info;
 
 use crate::{
-    AppState, hooks::{run_eject_hooks, run_hooks}, toml::TapeManifest, util::{atomic_swap, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
+    AppState, hooks::run_eject_hooks, util::{atomic_swap, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
 };
 
 pub fn run(
