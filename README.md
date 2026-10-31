@@ -196,9 +196,9 @@ Any configs your tape doesn't provide (Chrome profiles, `pulse`, whatever else l
 
 ## Roadmap
 
-- A TUI
-- Colored output
-- More features
+- [ ] A TUI or GUI
+- [ ] Colored output
+- [ ] More features
 
 ---
 
