@@ -71,6 +71,10 @@ pub enum Commands {
         /// Specific dir from the Git repository
         #[arg(short, long)]
         dir: Option<String>,
+
+        /// Skip install hooks.
+        #[arg(long)]
+        no_hooks: bool,
        
     },
 

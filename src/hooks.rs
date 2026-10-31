@@ -91,3 +91,13 @@ pub fn run_insert_hooks(
     let hooks = manifest.hooks.map(|h| h.insert);
     run_lifecycle_hooks(hooks, no_hooks, quiet, "Insert")
 }
+
+pub fn run_install_hooks(
+    manifest: TapeManifest,
+    no_hooks: bool,
+    // quiet: bool,
+) -> Result<(), anyhow::Error> {
+    let hooks = manifest.hooks.map(|h| h.eject);
+    run_lifecycle_hooks(hooks, no_hooks, false, "Install")
+}
+

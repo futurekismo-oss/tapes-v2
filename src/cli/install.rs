@@ -5,12 +5,15 @@ use std::{
     fs, path::{Path, PathBuf}, process::Command, time::{SystemTime, UNIX_EPOCH},
 };
 
+use crate::hooks;
+
 
 pub fn run(
     source: &str,
     name: Option<String>,
     branch: Option<String>,
     dir: Option<String>,
+    no_hooks: bool
 ) -> Result<(), anyhow::Error> {
     let source_path = PathBuf::from(source);
 
@@ -168,6 +171,10 @@ desc = "Tape installed from {source}"
             .open(tapes_data.join("install_records.txt"))
             .and_then(|mut f| std::io::Write::write_all(&mut f, record.as_bytes()));
     }
+
+    // Install hooks
+    let manifest = crate::util::load_manifest(&target_dir)?;
+    hooks::run_install_hooks(manifest, no_hooks)?;
 
     // Success confirmation message
     println!(

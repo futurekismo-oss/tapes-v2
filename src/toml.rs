@@ -20,4 +20,7 @@ pub struct Hooks {
 
     #[serde(default)]
     pub eject: Vec<String>,
+
+    #[serde(default)]
+    pub install: Vec<String>,
 }
