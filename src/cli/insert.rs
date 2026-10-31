@@ -1,7 +1,12 @@
 use crate::{
-    AppState, cli::eject::eject_tapes, hooks::run_hooks, toml::TapeManifest, util::{
-        atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest, save_state_data, yes_or_no_prompt,
+    cli::eject::eject_tapes,
+    hooks::run_insert_hooks,
+    toml::TapeManifest,
+    util::{
+        atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest,
+        save_state_data, yes_or_no_prompt,
     },
+    AppState,
 };
 use anyhow::bail;
 use dirs::{config_dir, home_dir};
@@ -41,16 +46,17 @@ pub fn run(
 
     let config_dir = config_dir().expect("config dir should exist");
     let home = home_dir().expect("Home dir should exist");
-    let new_config_dir = home.join(".config.tapes");
 
     if app.active_tape.is_some() && !dry_run {
         if !yes_or_no_prompt("Another tape is currently inserted.\nEject?") {
             bail!("Another tape is currently inserted, doing nothing, exiting");
         };
 
-        eject_tapes(app, &config_dir, &new_config_dir, quiet)?;
+        let eject_staging = home.join(".config.tapes");
+        eject_tapes(app, &config_dir, &eject_staging, quiet, no_hooks)?;
     }
 
+    let new_config_dir = home.join(".config.tapes");
     let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
     let tape_name = manifest.tape.name.clone();
 
@@ -77,8 +83,19 @@ pub fn run(
 
     if dry_run {
         println!("Created {new_config_dir:?}...");
+
+        for (name, target) in &targets {
+            println!(
+                "{name}: symlinking {:?} -> {:?}",
+                target.target_path, target.symlink_dest
+            );
+        }
+
         return Ok(());
     }
+
+    app.targets = Some(targets);
+
 
     if new_config_dir.exists() {
         info!("{new_config_dir:?} exists - something has gone wrong");
@@ -113,16 +130,7 @@ pub fn run(
 
     save_state_data(app)?;
 
-    if !no_hooks {
-        if let Some(hooks) = manifest.hooks {
-            if hooks.insert.is_empty() {
-                return Ok(());
-            }
-            println!("Running hooks");
-            run_hooks(hooks.insert, quiet)
-                .map_err(|error| anyhow::anyhow!("Failed to run insert hooks: {}", error))?;
-        }
-    }
+    run_insert_hooks(manifest, no_hooks, quiet)?;
 
     Ok(())
 }
