@@ -1,8 +1,12 @@
 use crate::{
-    AppState, cli::eject::eject_tapes, hooks::run_insert_hooks, toml::TapeManifest, util::{
+    cli::eject::eject_tapes,
+    hooks::run_insert_hooks,
+    toml::TapeManifest,
+    util::{
         atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest,
         save_state_data, yes_or_no_prompt,
     },
+    AppState,
 };
 use anyhow::bail;
 use dirs::{config_dir, home_dir};
@@ -51,13 +55,23 @@ pub fn run(
     app.path = Some(tape_path);
     app.active_tape = Some(tape_name);
 
-    let targets = resolve_targets(app, &new_config_dir)?;
-    app.targets = Some(targets);
+    let targets:  HashMap<String, Target> = resolve_targets(app, &new_config_dir)?;
 
     if dry_run {
         println!("Created {new_config_dir:?}...");
+
+        for (name, target) in &targets {
+            println!(
+                "{name}: symlinking {:?} -> {:?}",
+                target.target_path, target.symlink_dest
+            );
+        }
+
         return Ok(());
     }
+
+    app.targets = Some(targets);
+
 
     if new_config_dir.exists() {
         info!("{new_config_dir:?} exists - something has gone wrong");
@@ -96,7 +110,6 @@ pub fn run(
 
     Ok(())
 }
-
 
 pub fn resolve_tape(
     name: Option<&String>,
@@ -190,4 +203,3 @@ fn symlink_targets(
 
     Ok(())
 }
-
