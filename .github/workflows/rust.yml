@@ -20,7 +20,10 @@ jobs:
     - name: Update repository values
       run: |
         TAG_VERSION=${GITHUB_REF#refs/tags/v}
-        find . -type f \( -name "*.json" -o -name "*.md" -o -name "*.yml" \) -exec sed -i "s/PLACEHOLDER_VERSION/$TAG_VERSION/g" {} +
+        files=$(grep -rl "PLACEHORN_VERSION" . --exclude-dir=.git --exclude-dir=target || true)
+        if [ -n "$files" ]; then
+          echo "$files" | xargs sed -i "s/PLACEHOLDER_VERSION/$TAG_VERSION/g"
+        fi
 
     - name: Build (Release Mode)
       run: cargo build --release --verbose
