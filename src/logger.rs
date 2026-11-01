@@ -1,4 +1,3 @@
-use core::time;
 use log::{LevelFilter, Log, Metadata, Record};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
