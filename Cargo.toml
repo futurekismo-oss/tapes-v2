@@ -17,7 +17,7 @@ disabled-strategies = ["quick-install", "compile"]
 [dependencies]
 anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
-clap_complete = "4.6.11"
+clap_complete = { version = "4.6.11", features = ["unstable-dynamic"] }
 dirs = "7.0.0"
 log = "0.4.35"
 nix = { version = "0.31.3", default-features = false, features = ["fs"] }

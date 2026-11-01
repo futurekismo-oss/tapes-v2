@@ -14,7 +14,8 @@ pub struct AppState {
 
 impl AppState {
     pub fn default_path() -> Result<PathBuf, anyhow::Error> {
-        let local_dir = dirs::data_dir().ok_or_else(|| anyhow::anyhow!("Could not get local dir"))?;
+        let local_dir =
+            dirs::data_dir().ok_or_else(|| anyhow::anyhow!("Could not get local dir"))?;
         let dir = local_dir.join("tapes");
         if !dir.exists() {
             fs::create_dir_all(&dir)?;

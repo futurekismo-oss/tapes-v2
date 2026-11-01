@@ -1,12 +1,12 @@
 use crate::{
+    AppState,
     cli::eject::eject_tapes,
     hooks::run_insert_hooks,
     toml::TapeManifest,
     util::{
-        atomic_swap, find_targets, get_staging_config_path, get_tapes_data, get_tapes_default_path,
-        load_manifest, save_state_data, yes_or_no_prompt, MARKER_FILE_NAME,
+        MARKER_FILE_NAME, atomic_swap, find_targets, get_staging_config_path, get_tapes_data,
+        get_tapes_default_path, load_manifest, save_state_data, yes_or_no_prompt,
     },
-    AppState,
 };
 use anyhow::bail;
 use dirs::config_dir;
@@ -75,7 +75,9 @@ pub fn run(
 
     if new_config_dir.exists() {
         info!("{new_config_dir:?} exists - something has gone wrong");
-        bail!(".config.tapes exists, did something go wrong? bug report here https://github.com/futurekismo-oss/tapes-v2/issues");
+        bail!(
+            ".config.tapes exists, did something go wrong? bug report here https://github.com/futurekismo-oss/tapes-v2/issues"
+        );
     }
 
     fs::create_dir(&new_config_dir)?;

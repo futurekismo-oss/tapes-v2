@@ -5,10 +5,7 @@ use clap_complete::engine::ArgValueCompleter;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[command(
-    version,
-    about = "Atomic per-target dotfile switcher (v2)"
-)]
+#[command(version, about = "Atomic per-target dotfile switcher (v2)")]
 pub struct Cli {
     /// Enable logging output
     #[arg(short, long, global = true)]

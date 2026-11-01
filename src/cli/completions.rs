@@ -1,6 +1,6 @@
 use clap::CommandFactory;
 use clap_complete::engine::{CompletionCandidate, ValueCompleter};
-use clap_complete::{generate, Shell};
+use clap_complete::{Shell, generate};
 use log::info;
 use std::ffi::OsStr;
 use std::io;

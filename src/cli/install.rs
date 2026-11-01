@@ -1,18 +1,20 @@
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use log::info;
 use std::{
-    fs, path::{Path, PathBuf}, process::Command, time::{SystemTime, UNIX_EPOCH},
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use crate::{hooks, util::get_tapes_default_path};
-
 
 pub fn run(
     source: &str,
     name: Option<String>,
     branch: Option<String>,
     dir: Option<String>,
-    no_hooks: bool
+    no_hooks: bool,
 ) -> Result<(), anyhow::Error> {
     let source_path = PathBuf::from(source);
 

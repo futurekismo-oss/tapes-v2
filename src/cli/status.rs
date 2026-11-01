@@ -4,7 +4,10 @@ use dirs::config_dir;
 use crate::{
     cli::show::display_tape_info,
     state::AppState,
-    util::{get_staging_config_path, load_manifest, validate_correct_tapes_dir_structure, MARKER_FILE_NAME},
+    util::{
+        MARKER_FILE_NAME, get_staging_config_path, load_manifest,
+        validate_correct_tapes_dir_structure,
+    },
 };
 
 pub fn show(app: AppState, verbose: bool) -> Result<(), anyhow::Error> {
@@ -16,7 +19,10 @@ pub fn show(app: AppState, verbose: bool) -> Result<(), anyhow::Error> {
         if tapes_config_dir.exists() || marker.exists() {
             println!("No active tape recorded, but tapes-managed artifacts were found:");
             if tapes_config_dir.exists() {
-                println!(" - Found leftover staging directory at {}", tapes_config_dir.display());
+                println!(
+                    " - Found leftover staging directory at {}",
+                    tapes_config_dir.display()
+                );
             }
             if marker.exists() {
                 println!(" - Found marker file at {}", marker.display());
