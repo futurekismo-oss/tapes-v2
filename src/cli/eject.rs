@@ -1,11 +1,11 @@
 use std::{fs, path::Path};
 
 use anyhow::{bail, Context};
-use dirs::{config_dir, home_dir};
+use dirs::config_dir;
 use log::info;
 
 use crate::{
-    AppState, hooks::run_eject_hooks, util::{atomic_swap, load_manifest, save_state_data, validate_correct_tapes_dir_structure},
+    AppState, hooks::run_eject_hooks, util::{atomic_swap, get_staging_config_path, load_manifest, validate_correct_tapes_dir_structure, MARKER_FILE_NAME},
 };
 
 pub fn run(
@@ -16,25 +16,24 @@ pub fn run(
 ) -> Result<(), anyhow::Error> {
     info!("eject command");
 
-    let home_dir = home_dir().expect("home dir should exist");
     let config_dir = config_dir().expect("Config dir should exist");
-    let tapes_config_dir = home_dir.join(".config.tapes");
+    let tapes_config_dir = get_staging_config_path()?;
 
     validate_correct_tapes_dir_structure().context("No tapes is currently inserted")?;
 
-    let tape_name = app.active_tape.clone().expect("should exist");
+    let tape_name = app.active_tape.clone().unwrap_or_else(|| "unknown".to_string());
 
     if dry_run {
         println!("swapped {config_dir:?} -> {tapes_config_dir:?}");
         println!("removed {tapes_config_dir:?}");
         println!("cleared AppState");
-        println!("ejected: {}", tape_name.to_string());
+        println!("ejected: {tape_name}");
 
         return Ok(());
     }
 
     eject_tapes(app, &config_dir, &tapes_config_dir, quiet, no_hooks)?;
-    save_state_data(app)?;
+    app.save_current()?;
 
     Ok(())
 }
@@ -46,36 +45,29 @@ pub fn eject_tapes(
     quiet: bool,
     no_hooks: bool,
 ) -> Result<(), anyhow::Error> {
-    validate_correct_tapes_dir_structure()?; // Valiade twice for maximum safety
-
-    // manifest should be cleared before app data is removed by app.eject
-    // so this should stay about app.eject()
-    let tapes_path = app.path.clone().expect("app.path should exist");
-    let manifest = load_manifest(&tapes_path)?;
+    // manifest should be retrieved before app data is cleared by app.eject()
+    let manifest = if let Some(ref tapes_path) = app.path {
+        load_manifest(tapes_path).ok()
+    } else {
+        None
+    };
 
     app.eject()?;
     info!("cleared AppState");
 
-    if !quiet {
-        println!("removed {tapes_config_dir:?}");
-    }
-
-    atomic_swap(&config_dir, &tapes_config_dir).context("atomic swap failed, your original config is untouched, you can delete .config and rename .config.tapes to .config to get your config back")?;
+    atomic_swap(config_dir, tapes_config_dir).context("atomic swap failed, your original config is untouched, you can delete .config and rename .config.tapes to .config to get your config back")?;
     info!("swapped {config_dir:?} -> {tapes_config_dir:?}");
 
     if !quiet {
         println!("swapped {config_dir:?} -> {tapes_config_dir:?}");
     }
 
-    // Eject can remove data unfornately?
-    // but i can write a safety check
-
-    // Now it will only remove the dir, after its ensure .tapes owns it
-    if tapes_config_dir.join(".tapes-managed").exists() {
-        fs::remove_dir_all(&tapes_config_dir)
+    // Now it will only remove the dir after ensuring .tapes owns it
+    if tapes_config_dir.join(MARKER_FILE_NAME).exists() {
+        fs::remove_dir_all(tapes_config_dir)
             .context("failed to remove .config.tapes, you can remove it manually")?;
     } else {
-        bail!("{tapes_config_dir:?} was not removed, as tapes doesnt not manage it (.tapes-managed not found)")
+        bail!("{tapes_config_dir:?} was not removed, as tapes does not manage it ({MARKER_FILE_NAME} not found)")
     }
 
     info!("removed {tapes_config_dir:?}");
@@ -84,9 +76,11 @@ pub fn eject_tapes(
         println!("removed {tapes_config_dir:?}");
     }
 
-    run_eject_hooks(manifest, no_hooks, quiet)?;
+    if let Some(m) = manifest {
+        run_eject_hooks(m, no_hooks, quiet)?;
+    } else if !quiet {
+        info!("Skipping eject hooks: tape manifest could not be loaded");
+    }
 
     Ok(())
 }
-
-

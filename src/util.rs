@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{bail, Context};
 use dirs::{config_dir, data_dir, home_dir};
-use log::{error, info};
+use log::info;
 use nix::fcntl::{renameat2, RenameFlags};
 
 use crate::{state::AppState, toml::TapeManifest};
@@ -16,7 +16,6 @@ pub fn load_manifest(tape_dir: &Path) -> Result<TapeManifest, anyhow::Error> {
     info!("manifest path: {manifest_path:?}");
 
     if !manifest_path.exists() {
-        error!("tape.toml not found in {}", tape_dir.display());
         bail!("a tape.toml does not exist in {}", tape_dir.display());
     }
 
@@ -44,15 +43,23 @@ pub fn get_tapes_data(tape_name: &str) -> Result<TapeManifest, anyhow::Error> {
     load_manifest(&tape_dir)
 }
 
+pub const STAGING_DIR_NAME: &str = ".config.tapes";
+pub const MARKER_FILE_NAME: &str = ".tapes-managed";
+
+pub fn get_staging_config_path() -> Result<PathBuf, anyhow::Error> {
+    let home = home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
+    Ok(home.join(STAGING_DIR_NAME))
+}
+
 pub fn get_tapes_default_path() -> Result<PathBuf, anyhow::Error> {
     let tapes_dir = home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
     let tapes_dir = tapes_dir.join(".tapes");
 
-    if tapes_dir.exists() {
-        Ok(tapes_dir)
-    } else {
-        bail!("{} does not exist", tapes_dir.display().to_string())
+    // make ~/.tapes if first time running
+    if !tapes_dir.exists() {
+        fs::create_dir_all(&tapes_dir)?;
     }
+    Ok(tapes_dir)
 }
 
 pub fn get_tapes_data_path() -> Result<PathBuf, anyhow::Error> {
@@ -67,23 +74,37 @@ pub fn get_tapes_data_path() -> Result<PathBuf, anyhow::Error> {
 }
 
 pub fn save_state_data(data: &mut AppState) -> Result<(), anyhow::Error> {
-    let dir = get_tapes_data_path()?.join("state.json");
-    data.save(dir)?;
-
-    Ok(())
+    data.save_current()
 }
 
 pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
     let mut detected: Vec<PathBuf> = Vec::new();
 
+    // skip repo metadata and tape manifests so only real app configs get symlinked into ~/.config
+    const IGNORED: &[&str] = &[
+        "tape.toml",
+        ".git",
+        ".gitattributes",
+        "README.md",
+        ".github",
+        ".gitignore",
+        ".editorconfig",
+        "LICENSE",
+        MARKER_FILE_NAME,
+    ];
+
+    // if dir doesn't exist yet (fresh install / no .config), nothing to find
+    if !path.exists() {
+        return Ok(detected);
+    }
+
     for target in fs::read_dir(path)? {
         let target = target?;
-        const IGNORED: &[&str] = &["tape.toml", ".git", "README.md", ".github", ".gitignore", ".editorconfig", "LICENSE"];
 
-        if let Some(name) = target.file_name().to_str() {
-            if !IGNORED.contains(&name) {
-                detected.push(target.path());
-            }
+        if let Some(name) = target.file_name().to_str()
+            && !IGNORED.contains(&name)
+        {
+            detected.push(target.path());
         }
     }
 
@@ -92,9 +113,9 @@ pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
 
 pub fn atomic_swap<P: AsRef<Path>, Q: AsRef<Path>>(path1: P, path2: Q) -> io::Result<()> {
     renameat2(
-        None, // Uses AT_FDCWD (relative to current working directory)
+        nix::fcntl::AT_FDCWD, // Uses AT_FDCWD (relative to current working directory)
         path1.as_ref(),
-        None, // Uses AT_FDCWD
+        nix::fcntl::AT_FDCWD, // Uses AT_FDCWD
         path2.as_ref(),
         RenameFlags::RENAME_EXCHANGE,
     )
@@ -102,9 +123,8 @@ pub fn atomic_swap<P: AsRef<Path>, Q: AsRef<Path>>(path1: P, path2: Q) -> io::Re
 }
 
 pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
-    let home_dir = home_dir().expect("home dir should exist");
     let config_dir = config_dir().expect("Config dir should exist");
-    let tapes_config_dir = home_dir.join(".config.tapes");
+    let tapes_config_dir = get_staging_config_path()?;
 
     if !config_dir.exists() {
         bail!("{config_dir:?} doesn't exist, exiting");
@@ -116,7 +136,7 @@ pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
     }
     info!("{:?} exists", tapes_config_dir);
 
-    let marker_path = config_dir.join(".tapes-managed");
+    let marker_path = config_dir.join(MARKER_FILE_NAME);
     if !marker_path.exists() {
         bail!("{config_dir:?} is not managed by tapes")
     }
@@ -136,4 +156,3 @@ pub fn yes_or_no_prompt(message: &str) -> bool {
 
     input.trim().to_lowercase() == "y"
 }
-

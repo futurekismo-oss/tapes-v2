@@ -1,24 +1,21 @@
 mod cli;
+pub mod hooks;
+pub mod logger;
 pub mod state;
 pub mod toml;
 pub mod util;
-pub mod hooks;
 
 use clap::Parser;
 use cli::structs::Cli;
-use log::{info, LevelFilter};
+use log::info;
 
-use cli::{insert, show, status, install, eject, structs::Commands};
+use cli::{eject, insert, install, show, status, structs::Commands};
 use state::AppState;
-use util::get_tapes_data_path;
 
 fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
 
-    let state_path = get_tapes_data_path()?.join("state.json");
-    let mut app = AppState::load(state_path)?;
-
-    init_logging(cli.logging);
+    logger::init(cli.logging);
     info!("Tapes v2 startup");
 
     match cli.command {
@@ -28,33 +25,22 @@ fn main() -> Result<(), anyhow::Error> {
             path,
             dry_run,
             no_hooks,
-        } => insert::run(&mut app, name, path, dry_run, no_hooks, cli.quiet)?,
-        Commands::Status => status::show(app, cli.verbose)?,
-        Commands::Eject { dry_run, no_hooks } => eject::run(&mut app, dry_run, no_hooks, cli.quiet)?,
-      
-        Commands::Install { source, name, branch, dir, no_hooks } => {
-            install::run(&source, name, branch, dir, no_hooks)?
+        } => insert::run(&mut load_app()?, name, path, dry_run, no_hooks, cli.quiet)?,
+        Commands::Status => status::show(load_app()?, cli.verbose)?,
+        Commands::Eject { dry_run, no_hooks } => {
+            eject::run(&mut load_app()?, dry_run, no_hooks, cli.quiet)?
         }
-        _ => todo!(),
+        Commands::Install { source, name, branch, dir, no_hooks } => {
+            install::run(&source, name, branch, dir, no_hooks)?;
+        }
+        Commands::Commit => {
+            anyhow::bail!("The 'commit' command is not yet implemented.");
+        }
     }
 
     Ok(())
 }
 
-fn init_logging(logging: bool) {
-    let mut builder = env_logger::Builder::new();
-
-    if let Ok(rust_log_env) = std::env::var("RUST_LOG") {
-        builder.parse_filters(&rust_log_env);
-    } else {
-        let filter_level = if logging {
-            LevelFilter::Trace
-        } else {
-            LevelFilter::Warn
-        };
-
-        builder.filter_level(filter_level);
-    };
-
-    builder.init();
+fn load_app() -> Result<AppState, anyhow::Error> {
+    AppState::load_current()
 }

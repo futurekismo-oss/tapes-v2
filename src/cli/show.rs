@@ -7,29 +7,33 @@ use crate::{
 
 pub fn run(name: Option<String>) -> Result<(), anyhow::Error> {
     let tapes_path = get_tapes_default_path()?;
-    // let tapes_dir = tapes_path.expect("tapes path should exist").join(name);
 
     if let Some(name) = name {
         let name = name.to_lowercase();
-
         let tapes = get_tapes_data(&name)?;
         let tapes_dir = tapes_path.join(name);
-
         display_tape_info(tapes, &tapes_dir);
     } else {
         println!("All Tapes (in ~/.tapes)");
 
-        for entry in fs::read_dir(tapes_path)? {
-            let entry = entry?;
-            let path = entry.path();
+        let mut count = 0;
+        if let Ok(entries) = fs::read_dir(&tapes_path) {
+            for entry in entries {
+                let entry = entry?;
+                let path = entry.path();
 
-            if path.is_dir() {
-                if path.join("tape.toml").exists() {
-                    if let Some(folder_name) = path.file_name().and_then(|n| n.to_str()) {
-                        println!("- {}: {}", folder_name, path.display().to_string())
-                    }
+                if path.is_dir()
+                    && path.join("tape.toml").exists()
+                    && let Some(name) = path.file_name().and_then(|n| n.to_str())
+                {
+                    println!("- {name}: {}", path.display());
+                    count += 1;
                 }
             }
+        }
+
+        if count == 0 {
+            println!("No tapes installed yet.");
         }
     }
 
@@ -43,6 +47,13 @@ pub fn display_tape_info(tape: TapeManifest, tapes_path: &Path) {
 
     if let Some(hooks) = &tape.hooks {
         println!("Hooks");
+
+        if !hooks.install.is_empty() {
+            println!("  Install:");
+            for hook in &hooks.install {
+                println!("   - {}", hook);
+            }
+        }
 
         if !hooks.insert.is_empty() {
             println!("  Insert:");

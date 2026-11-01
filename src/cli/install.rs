@@ -1,11 +1,10 @@
 use anyhow::{bail, Context};
-use dirs::home_dir;
 use log::info;
 use std::{
     fs, path::{Path, PathBuf}, process::Command, time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::hooks;
+use crate::{hooks, util::get_tapes_default_path};
 
 
 pub fn run(
@@ -40,8 +39,7 @@ pub fn run(
 
     let tape_name = tape_name.to_lowercase(); // Make the dir name lowercase, no matter what
 
-    let home = home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
-    let tapes_dir = home.join(".tapes");
+    let tapes_dir = get_tapes_default_path()?;
     let target_dir = tapes_dir.join(&tape_name);
 
     if target_dir.exists() {
@@ -100,7 +98,7 @@ pub fn run(
         };
 
         // add the repo url and the path
-        cmd.arg(&url).arg(&clone_destination);
+        cmd.arg(&url).arg(clone_destination);
 
         info!("git command: {:?}", cmd);
 
@@ -187,9 +185,9 @@ desc = "Tape installed from {source}"
 
 fn normalize_git_url(source: &str) -> String {
     if !source.contains("://") && !source.starts_with("git@") && source.contains('/') {
-        return format!("https://github.com/{}.git", source.trim_end_matches(".git"));
+        format!("https://github.com/{}.git", source.trim_end_matches(".git"))
     } else {
-        return source.to_string();
+        source.to_string()
     }
 }
 
@@ -216,5 +214,5 @@ fn copy_dir(source: &Path, destination: &Path) -> Result<(), anyhow::Error> {
         }
     }
 
-    return Ok(());
+    Ok(())
 }

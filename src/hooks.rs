@@ -1,50 +1,43 @@
-use anyhow::{anyhow, bail, Result};
-use log::error;
-use std::{env, process::Command};
+use anyhow::{Result, anyhow, bail};
+use log::warn;
+use std::{env, process::Command, sync::LazyLock};
 
 use crate::toml::TapeManifest;
+
+static USER_SHELL: LazyLock<String> =
+    LazyLock::new(|| env::var("SHELL").unwrap_or_else(|_| "sh".to_string()));
 
 pub fn run_hooks(hooks: Vec<String>, quiet: bool) -> Result<(), anyhow::Error> {
     if hooks.is_empty() {
         return Ok(());
     }
 
-    let mut failed = false;
-
     for hook in hooks {
         let hook = hook.trim();
+        if hook.is_empty() {
+            continue;
+        }
 
         if !quiet {
-            println!(" - '{}'", hook);
+            println!(" - '{hook}'");
         }
 
         if let Err(err) = run_command(hook) {
-            error!("Hook failed: '{}': {}", hook, err);
-            failed = true;
+            bail!("Hook failed: '{hook}': {err}");
         }
-    }
-
-    if failed {
-        bail!("One or more hooks failed");
     }
 
     Ok(())
 }
 
 pub fn run_command(command: &str) -> Result<(), anyhow::Error> {
-    let shell = get_user_preferred_shell();
-
-    let status = Command::new(shell).arg("-c").arg(command).status()?;
+    let status = Command::new(&*USER_SHELL).arg("-c").arg(command).status()?;
 
     if !status.success() {
-        return Err(anyhow!("Command failed with exit status: {}", status));
+        return Err(anyhow!("Command failed with exit status: {status}"));
     }
 
     Ok(())
-}
-
-fn get_user_preferred_shell() -> String {
-    env::var("SHELL").unwrap_or("sh".to_string())
 }
 
 fn run_lifecycle_hooks(
@@ -68,7 +61,7 @@ fn run_lifecycle_hooks(
     println!("Running hooks");
 
     if let Err(err) = run_hooks(hooks, quiet) {
-        error!("{} hooks completed with warnings/errors: {}", stage, err);
+        warn!("{} hooks completed with warnings/errors: {}", stage, err);
     }
 
     Ok(())
@@ -97,7 +90,6 @@ pub fn run_install_hooks(
     no_hooks: bool,
     // quiet: bool,
 ) -> Result<(), anyhow::Error> {
-    let hooks = manifest.hooks.map(|h| h.eject);
+    let hooks = manifest.hooks.map(|h| h.install);
     run_lifecycle_hooks(hooks, no_hooks, false, "Install")
 }
-
