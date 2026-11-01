@@ -3,7 +3,7 @@
 # This is the source package: builds from the crates.io sdist with cargo.
 
 pkgname=tapes-v2
-_upstream=0.1.1-beta        # published crates.io version; pkgver may not contain dashes
+_upstream=0.1.3-beta        # published crates.io version; pkgver may not contain dashes
 pkgver=${_upstream//-/}
 pkgrel=1
 pkgdesc="Atomic dotfiles switcher: swap whole desktop setups with one command, roll back with another"
