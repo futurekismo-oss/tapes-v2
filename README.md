@@ -24,11 +24,11 @@ Rewritten to be safer, simpler and truly atomic
 
 ## Why Use Tapes?
 
-If you're like me and a big unixporn fan, you've definitely found you self wanting to try new configs however the worry of trashing your old config holds you back. install scripts barely care, they frequentely override previous configs or just backup the entire config folder and make a new one forcing you go to back and manually move files and fix the mess. 
+If you're like me and a big unixporn fan, you've definitely found yourself wanting to try new rices however the worry of trashing your old config holds you back. install scripts barely care, they frequentely override previous configs or just backup the entire config folder and make a new one forcing you go to back and manually move files to fix the mess. 
 
-Tapes aims to solve this, by making trying out new and switching between configs as frictionless as possible as well as being safe and fast while doing so. Other dotfile managers have tried come close but dont give this feeling of pop in a config and pop it out as fast. ( if you dont get it, this is where the name came from ). The initial implementation (v1) was hasty and buggy. It was meant to show that this could indeed the possible, this is the carefully implemented version
+Tapes aims to solve this by making trying out new rices and switching between them as frictionless as while being safe and fast. Other dotfile managers have come close but dont give this feeling of pop in a config and pop it out as fast. ( this is where the name came from ). The initial implementation (v1) was hasty and buggy. It was a prototype.
 
-Now lets the terminology, you'll come across whilst using this program clear
+Now let's explain the terms you'll come across while using this program
 
 **Tape**: A tape is ~/.config folder, a rice, a dotfile whatever you call it. it contains folders like `quickshell` and `hypr` the like, tapes can take this config folder, swap its `targets` or folders with your own, allowing you to use the quickshell and hypr config in this tape easily without losing things like `chromium` keys (which are stored in `~/.config/chromium` for some reason) 
 
