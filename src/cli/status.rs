@@ -1,18 +1,17 @@
 use anyhow::bail;
-use dirs::{config_dir, home_dir};
+use dirs::config_dir;
 
 use crate::{
     cli::show::display_tape_info,
     state::AppState,
-    util::{load_manifest, validate_correct_tapes_dir_structure},
+    util::{get_staging_config_path, load_manifest, validate_correct_tapes_dir_structure, MARKER_FILE_NAME},
 };
 
 pub fn show(app: AppState, verbose: bool) -> Result<(), anyhow::Error> {
     if app.active_tape.is_none() && app.path.is_none() {
-        let home = home_dir().expect("Home dir should exist");
         let cfg = config_dir().expect("Config dir should exist");
-        let tapes_config_dir = home.join(".config.tapes");
-        let marker = cfg.join(".tapes-managed");
+        let tapes_config_dir = get_staging_config_path()?;
+        let marker = cfg.join(MARKER_FILE_NAME);
 
         if tapes_config_dir.exists() || marker.exists() {
             println!("No active tape recorded, but tapes-managed artifacts were found:");

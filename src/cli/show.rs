@@ -6,21 +6,7 @@ use crate::{
 };
 
 pub fn run(name: Option<String>) -> Result<(), anyhow::Error> {
-    let tapes_path = match get_tapes_default_path() {
-        Ok(p) => p,
-        Err(_) => {
-            if name.is_none() {
-                println!("All Tapes (in ~/.tapes)");
-                println!("No tapes installed yet.");
-                return Ok(());
-            } else {
-                let default_dir = dirs::home_dir()
-                    .map(|h| h.join(".tapes"))
-                    .unwrap_or_else(|| std::path::PathBuf::from("~/.tapes"));
-                anyhow::bail!("{} does not exist", default_dir.display());
-            }
-        }
-    };
+    let tapes_path = get_tapes_default_path()?;
 
     if let Some(name) = name {
         let name = name.to_lowercase();

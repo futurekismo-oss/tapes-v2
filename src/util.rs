@@ -43,6 +43,14 @@ pub fn get_tapes_data(tape_name: &str) -> Result<TapeManifest, anyhow::Error> {
     load_manifest(&tape_dir)
 }
 
+pub const STAGING_DIR_NAME: &str = ".config.tapes";
+pub const MARKER_FILE_NAME: &str = ".tapes-managed";
+
+pub fn get_staging_config_path() -> Result<PathBuf, anyhow::Error> {
+    let home = home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
+    Ok(home.join(STAGING_DIR_NAME))
+}
+
 pub fn get_tapes_default_path() -> Result<PathBuf, anyhow::Error> {
     let tapes_dir = home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
     let tapes_dir = tapes_dir.join(".tapes");
@@ -66,10 +74,7 @@ pub fn get_tapes_data_path() -> Result<PathBuf, anyhow::Error> {
 }
 
 pub fn save_state_data(data: &mut AppState) -> Result<(), anyhow::Error> {
-    let dir = get_tapes_data_path()?.join("state.json");
-    data.save(dir)?;
-
-    Ok(())
+    data.save_current()
 }
 
 pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
@@ -84,7 +89,7 @@ pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
         ".gitignore",
         ".editorconfig",
         "LICENSE",
-        ".tapes-managed",
+        MARKER_FILE_NAME,
     ];
 
     // if dir doesn't exist yet (fresh install / no .config), nothing to find
@@ -117,9 +122,8 @@ pub fn atomic_swap<P: AsRef<Path>, Q: AsRef<Path>>(path1: P, path2: Q) -> io::Re
 }
 
 pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
-    let home_dir = home_dir().expect("home dir should exist");
     let config_dir = config_dir().expect("Config dir should exist");
-    let tapes_config_dir = home_dir.join(".config.tapes");
+    let tapes_config_dir = get_staging_config_path()?;
 
     if !config_dir.exists() {
         bail!("{config_dir:?} doesn't exist, exiting");
@@ -131,7 +135,7 @@ pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
     }
     info!("{:?} exists", tapes_config_dir);
 
-    let marker_path = config_dir.join(".tapes-managed");
+    let marker_path = config_dir.join(MARKER_FILE_NAME);
     if !marker_path.exists() {
         bail!("{config_dir:?} is not managed by tapes")
     }

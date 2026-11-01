@@ -10,7 +10,6 @@ use log::{info, LevelFilter};
 
 use cli::{insert, show, status, install, eject, structs::Commands};
 use state::AppState;
-use util::get_tapes_data_path;
 
 fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
@@ -42,8 +41,7 @@ fn main() -> Result<(), anyhow::Error> {
 }
 
 fn load_app() -> Result<AppState, anyhow::Error> {
-    let state_path = get_tapes_data_path()?.join("state.json");
-    AppState::load(state_path)
+    AppState::load_current()
 }
 
 fn init_logging(logging: bool) {

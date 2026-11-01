@@ -3,13 +3,13 @@ use crate::{
     hooks::run_insert_hooks,
     toml::TapeManifest,
     util::{
-        atomic_swap, find_targets, get_tapes_data, get_tapes_default_path, load_manifest,
-        save_state_data, yes_or_no_prompt,
+        atomic_swap, find_targets, get_staging_config_path, get_tapes_data, get_tapes_default_path,
+        load_manifest, save_state_data, yes_or_no_prompt, MARKER_FILE_NAME,
     },
     AppState,
 };
 use anyhow::bail;
-use dirs::{config_dir, home_dir};
+use dirs::config_dir;
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -33,7 +33,7 @@ pub fn run(
     info!("Current tapes: {:?}", app.active_tape);
 
     let config_dir = config_dir().expect("config dir should exist");
-    let home = home_dir().expect("Home dir should exist");
+    let new_config_dir = get_staging_config_path()?;
 
     // check tape exists first before doing anything or asking to eject
     let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
@@ -45,12 +45,9 @@ pub fn run(
             bail!("Another tape is currently inserted, doing nothing, exiting");
         };
 
-        let eject_staging = home.join(".config.tapes");
-        eject_tapes(app, &config_dir, &eject_staging, quiet, no_hooks)?;
-        save_state_data(app)?;
+        eject_tapes(app, &config_dir, &new_config_dir, quiet, no_hooks)?;
+        app.save_current()?;
     }
-
-    let new_config_dir = home.join(".config.tapes");
 
     if config_dir.is_symlink() {
         bail!("{config_dir:?} is a symlink, prone to fail");
@@ -84,7 +81,7 @@ pub fn run(
     fs::create_dir(&new_config_dir)?;
     info!("Created {new_config_dir:?}");
 
-    let marker_path = new_config_dir.join(".tapes-managed");
+    let marker_path = new_config_dir.join(MARKER_FILE_NAME);
     File::create(&marker_path)?;
     info!("Created: {marker_path:?}");
 
@@ -151,18 +148,20 @@ fn resolve_targets(
     let config_dir = config_dir().expect("Config dir should exist");
     let mut targets = HashMap::with_capacity(64);
 
-    if config_dir.exists() {
-        for target_path in find_targets(&config_dir)? {
-            let (name, target) = map_target(target_path, new_config_dir, false);
+    let mut add_targets = |dir: &Path, from_tapes: bool| -> Result<(), anyhow::Error> {
+        for target_path in find_targets(dir)? {
+            let (name, target) = map_target(target_path, new_config_dir, from_tapes);
             targets.insert(name, target);
         }
+        Ok(())
+    };
+
+    if config_dir.exists() {
+        add_targets(&config_dir, false)?;
     }
 
     let tapes_path = app.path.as_deref().expect("path just set");
-    for target_path in find_targets(tapes_path)? {
-        let (name, target) = map_target(target_path, new_config_dir, true);
-        targets.insert(name, target);
-    }
+    add_targets(tapes_path, true)?;
 
     Ok(targets)
 }

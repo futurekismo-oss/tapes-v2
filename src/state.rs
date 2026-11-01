@@ -13,6 +13,23 @@ pub struct AppState {
 }
 
 impl AppState {
+    pub fn default_path() -> Result<PathBuf, anyhow::Error> {
+        let local_dir = dirs::data_dir().ok_or_else(|| anyhow::anyhow!("Could not get local dir"))?;
+        let dir = local_dir.join("tapes");
+        if !dir.exists() {
+            fs::create_dir_all(&dir)?;
+        }
+        Ok(dir.join("state.json"))
+    }
+
+    pub fn load_current() -> Result<Self, anyhow::Error> {
+        Self::load(Self::default_path()?)
+    }
+
+    pub fn save_current(&self) -> Result<(), anyhow::Error> {
+        self.save(Self::default_path()?)
+    }
+
     pub fn load<P: AsRef<Path>>(file_path: P) -> Result<Self, anyhow::Error> {
         let path = file_path.as_ref();
         if !path.exists() {
