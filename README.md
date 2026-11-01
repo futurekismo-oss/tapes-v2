@@ -1,4 +1,3 @@
-<!-- PROJECT HEADER -->
 <br />
 <div align="center">
 
@@ -6,8 +5,8 @@
 
 <img src="media/icon.svg" alt="Tapes logo" width="200">
 
-An atomic dotfile switcher for ricing.
-Swap your whole setup in one command, get it back in one command.
+An atomic dotfile switcher for Linux and ricing.
+Swap your whole setup in one command and get it back in one command.
 
 Rewritten to be safer, simpler and truly atomic
 
@@ -23,23 +22,21 @@ Rewritten to be safer, simpler and truly atomic
 
 ---
 
-## Why Tapes?
+## Why Use Tapes?
 
-If you stare at your desktop for longer than zero hours, you have personal configs of every app you use in `~/.config`. Your desktop decorations and app settings all technically live in there, which means changing how your entire desktop looks is done the manual way... or with **tapes**.
+If you're like me and a big unixporn fan, you've definitely found you self wanting to try new configs however the worry of trashing your old config holds you back. install scripts barely care, they frequentely override previous configs or just backup the entire config folder and make a new one forcing you go to back and manually move files and fix the mess. 
 
-A **tape** is someone's whole `~/.config` setup — or just the parts they want to share — packed into one folder you can plug in with a single command.
+Tapes aims to solve this, by making trying out new and switching between configs as frictionless as possible as well as being safe and fast while doing so. Other dotfile managers have tried come close but dont give this feeling of pop in a config and pop it out as fast. ( if you dont get it, this is where the name came from ). The initial implementation (v1) was hasty and buggy. It was meant to show that this could indeed the possible, this is the carefully implemented version
 
-Most dotfile managers (like GNU Stow or manual symlink managers) operate file-by-file. If something crashes midway, your `~/.config` is left in a broken, half-swapped state.
+Now lets the terminology, you'll come across whilst using this program clear
 
-Tapes does the opposite: it builds your new config tree off to the side, then swaps the old and new trees in one single kernel operation. That means:
+**Tape**: A tape is ~/.config folder, a rice, a dotfile whatever you call it. it contains folders like `quickshell` and `hypr` the like, tapes can take this config folder, swap its `targets` or folders with your own, allowing you to use the quickshell and hypr config in this tape easily without losing things like `chromium` keys (which are stored in `~/.config/chromium` for some reason) 
 
-- **No half-states** — `~/.config` is either your old setup or the new one, never in between.
-- **Instant rollback** — `tapes-v2 eject` puts things back exactly how they were, atomically.
-- **Your files are never touched** — the original config is never modified, overwritten, or deleted.
+**Target**: A target is a folder in a tape, a `quickshell` folder, `hypr` folder but a target can also be a file e.g `.zshrc`, `starship.toml`, these targets tell tapes the config you wanna insert into your `~/.config` folder 
 
-That's the whole idea. If you want to know how the swap actually works, see [INTERNALS.md](INTERNALS.md).
+**Atomic**: you've heard me say it alot, it means there is no inbetween, when tapes insert a tapes, it takes the files from your `~/.config` folder asks the tape the config its provides, then builds an entire config called `~/.config.tapes` made up of symlinks from the tape and your previous config, it then uses the renameat linux syscall to swap your `~/.config` with `~/.config.tapes`. Your old `~/.config` becomes `~/.config.tapes` and vice versa. Because there is no inbetween state where tapes is missing, it can call itself atomic, as anyone before the swap can be easily rolled back by deleting `~/.config.tapes`
 
-In day-to-day terms: keep as many tapes in your library as you like and insert and eject them at will — the workflow is like running `matugen`, except instead of regenerating colors it swaps entire config trees. And insertion is not a full reset: only the configs a tape actually provides are overridden, everything else from your old `~/.config` carries over. A tape that ships just a `quickshell/` config swaps only that — your Chromium profile stays logged in and your `nvim` config stays yours, no re-login, no expenses.
+**Hooks**: Shell commands in the tape.toml, tapes can run them after insert, after eject or after install, *Make sure to read these if a repo provides its own tape.toml, it shouldn't*
 
 ---
 
@@ -51,163 +48,80 @@ https://github.com/user-attachments/assets/6791a91b-a3be-429b-9fd0-adc34fc93b08
 
 ## Quickstart
 
-Install a tape, insert it into your desktop, and eject when you want your old setup back:
+either package a `~/.config` as a tape (put in it a folder, move to `~/.tapes` and add a tape.toml inside) or install one directly from a repo. Then you can easily insert to try it out and eject as easily to return back to your old `~/.config`
 
 ```bash
-# 1. Install downloads or copies a tape into the library (~/.tapes/). It doesn't touch anything else yet
-tapes-v2 install https://github.com/username/some_dots --name demo
+# You found a cyberpunk dotfiles in a public repo
+tapes-v2 install https://github.com/some_user/cyberpunk --name cyberpunk 
+# if its in a specific branch or subdir in the repo, utilize the --branch and --dir subcommands
 
-tapes-v2 install https://github.com/username/some_dots --dir dots/.config # or from a specific folder in the repo
-tapes-v2 install https://github.com/username/some_dots --branch dots # or branch
+# Insert a tape sitting in ~/.tapes
+tapes-v2 insert cyberpunk # tapes expects the tape in ~/.tapes/cyberpunk
 
-# Or from a local folder:
-# tapes-v2 install ~/my-dots --name demo
+# Wanna see its properties and hooks before insertion?
+tapes-v2 show cyberpunk
 
-# 2. See what the tape contains and what it overrides
-tapes-v2 show demo
+# List all the tapes in ~/tapes
+tapes-v2 show
 
-# 3. Insert the tape (swaps your config and runs reload hooks)
-tapes-v2 insert demo
-
-# 4. Check what's active
+# Is a tape currently inserted?
 tapes-v2 status
 
-# 5. Revert back like nothing ever happened
+# Wanna go back to your old config?
 tapes-v2 eject
 ```
 
-> Tip: add `alias tapes="tapes-v2"` to your `~/.bashrc` or `~/.zshrc` to use `tapes` as a shortcut.
-
-> **Before inserting a tape you didn't write, read it.** Hooks are arbitrary shell commands that run as your user the moment a swap lands — `hyprctl reload` is the friendly example, but a `tape.toml` can just as easily contain `rm -rf`. The swap itself is reversible; a hook command is not. `tapes-v2 show <name>` prints every hook a tape runs, and `insert --no-hooks` lets you test a tape without executing any of its commands first.
-
----
-
-## Installation
-
-Tapes is Linux-only — the whole trick is a kernel syscall, so macOS and BSD are out of scope.
-
-### Option 1: Install script (Arch and other Linux)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/futurekismo-oss/tapes-v2/main/install.sh | bash
-```
-
-### Option 2: Nix / NixOS
-
-```bash
-nix run github:futurekismo-oss/tapes-v2 -- --help
-# or add it to your profile:
-nix profile install github:futurekismo-oss/tapes-v2
-```
-
-### Option 3: cargo binstall
-```bash
-# it is required to specify the version until tapes leaves beta
-cargo binstall tapes-v2@0.1.4-beta
-```
-
-### Option 4: From source
-
-```bash
-git clone https://github.com/futurekismo-oss/tapes-v2.git
-cd tapes-v2
-cargo install --path .
-```
-
-### Shell Completion
-
-For shell completion, add the following to your .zshrc or .bashrc or *other* depending on your shell
-
-```bash
-source <(COMPLETE=YOUR_SHELL_NAME_HERE tapes-v2)
-```
-
-tapes shell completion supports fish, zsh, bash, nushell and elvish 
-
----
-
-## Commands
-
-| Command | What it does |
-|---------|--------------|
-| `tapes-v2 install <source>` | Downloads or copies a tape into your library (`~/.tapes/`) |
-| `tapes-v2 show [name]` | Lists all installed tapes, or inspects one |
-| `tapes-v2 insert [name]` | Swaps a tape into `~/.config` and runs its insert hooks |
-| `tapes-v2 eject` | Swaps your original config back and runs its eject hooks |
-| `tapes-v2 status [-v]` | Shows the active tape, where it came from, and its targets |
-
-Handy flags on top of the above:
-
-```bash
---dry-run    # show the plan without touching anything
---no-hooks   # skip the hook commands from the manifest (e.g. hyprctl reload)
-install -b   # install a specific branch, tag, or commit
---path       # insert straight from any directory, skipping the library
--q           # quiet output
-```
-
-The short version:
-
-```bash
-# Clone someone's rice and try it
-tapes-v2 install user/awesome-rice
-
-tapes-v2 install user/awesome-rice --dir dots # or from a specific folder in the repo
-tapes-v2 install user/awesome-rice --branch dots # or branch
-
-tapes-v2 insert awesome-rice
-
-# Don't like it? One command and nothing ever happened
-tapes-v2 eject
-```
-
----
-
-## Creating Your Own Tape
-
-A tape is just a folder with your config overrides and a `tape.toml` manifest.
-
-The top level of a tape mirrors the top level of `~/.config` — a folder named `hypr` in the tape overrides `~/.config/hypr`, and so on.
-
-```text
-my-tape/
-├── tape.toml         # manifest
-├── hypr/             # overrides ~/.config/hypr
-│   └── hyprland.conf
-├── waybar/           # overrides ~/.config/waybar
-│   └── config.jsonc
-└── nvim/             # overrides ~/.config/nvim
-    └── init.lua
-```
-
-`tape.toml`:
+Simple as that
+A tape.toml is expected to look like this
 
 ```toml
 [tape]
-name = "neon-dream"
-desc = "Vibrant synthwave theme for Hyprland + Waybar"
-dependencies = ["hyprland", "waybar"]
+name = "cyberpunk" # required
+desc = "A cool cyberpunk rice"
+dependencies = ["hyprland", "quickshell"] # just useful data for the user, tapes does nothing with it as of now
 
 [hooks]
-# Commands run right after the swap
 insert = [
-    "hyprctl reload",
-    "qs kill",
-    "waybar &",
-    "notify-send 'Tapes' 'Switched to neon-dream!'",
+  "hyprctl reload",
+  "qs kill",
+  "waybar &",   "notify-send 'Tapes' 'Switched to cyberpunk rice'"
 ]
 
-# Commands run after the tape is ejected
 eject = [
-    "hyprctl reload",
-    "pkll waybar",
-    # hooks run in the current shell session not in the background
-    "qs -c caelestia -d", 
-    "notify-send 'Tapes' 'Back to caelestia'",
+  "hyprctl reload",
+  "pkll waybar",
+  # Tapes runs commands in the current shell session, so try to move them to the background
+  "qs -c caelestia -d",  
+  "notify-send 'Tapes' 'Back to caelestia'",
 ]
+
+# install = [] # exists btw
 ```
 
-Any configs your tape doesn't provide (Chrome profiles, `pulse`, whatever else lives in `~/.config`) stay exactly as they are.
+Tapes expects directory tree to look like this
+
+```text
+cyberpunk/
+├── tape.toml         
+├── hypr/             
+│   └── hyprland.conf
+├── waybar/           
+│   └── config.jsonc
+└── nvim/            
+    └── init.lua
+```
+
+
+Some handy flags for tapes
+
+```bash
+--dry-run # shows the plan without touching any files
+--no-hooks # skip running any hooks
+--path # insert a tape straight out any folder
+-q # quiet output
+-v # verbose output
+--logging # show logs, useful for reporting issues and debugging
+```
 
 ---
 
@@ -246,3 +160,5 @@ The internals of how Tapes works live in [INTERNALS.md](INTERNALS.md) — worth 
 ## License
 
 Distributed under the [MIT License](LICENSE).
+
+
