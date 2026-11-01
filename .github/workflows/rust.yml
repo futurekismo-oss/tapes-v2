@@ -17,6 +17,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Update repository values
+      run: |
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        find . -type f \( -name "*.json" -o -name "*.md" -o -name "*.yml" \) -exec sed -i "s/PLACEHOLDER_VERSION/$TAG_VERSION/g" {} +
+
     - name: Build (Release Mode)
       run: cargo build --release --verbose
 
