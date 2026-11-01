@@ -16,7 +16,7 @@
 
 - Run [typos](https://github.com/crate-ci/typos) to catch spelling mistakes.
 
-- Follow the DRY (Don't Repeat Yourself) technique.
+- Follow the DRY (Don't Repeat Yourself) technique. 
 
 - Utilize helpers to reduce the density of functions, but use them in moderation:
   - When it's a staged function — yes.
@@ -30,8 +30,10 @@
   - The `insert` helper stays in the `insert` command unless the `install` command needs it; however, `get_tapes_data` can go in `utils`.
 
 - Try not to write code blind, test, test, test.
-  - This repo is currently lacking in test so that might be the first place to commit
-
+  - This repo is currently lacking in test so that might be a good place to PR
+ 
+- Collaborators should not push directly to the main but rather create branches or forks and open them as PRs, not following this rule might mean your commits get reverted when i push mine.
+    
 - Read the previous commit messages to get a sense of how to commit.
   - If I don't like the message, I'll request a rebase.
 
@@ -40,6 +42,7 @@
 - AI is skeptically allowed in this repo:
   - You must understand the code fully.
   - Be liable for any errors.
+  - Try not write READMEs or Documentation with AI
   - Fully agentic commits are not allowed.
   - Use AI the same way you would use Stack Overflow if your `Ctrl+C` and `Ctrl+V` keys didn't work.
 
