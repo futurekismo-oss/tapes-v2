@@ -191,7 +191,8 @@ insert = [
 eject = [
     "hyprctl reload",
     "pkll waybar",
-    "qs -c caelestia",
+    # hooks run in the current shell session not in the background
+    "qs -c caelestia -d", 
     "notify-send 'Tapes' 'Back to caelestia'",
 ]
 ```

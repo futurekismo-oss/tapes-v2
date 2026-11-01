@@ -140,11 +140,11 @@ desc = "Tape installed from {source}"
 # insert = [
 #     # "hyprctl reload",
 #     # "pkill waybar",
-#     # "qs -c {tape_name}"
+#     # "qs -c {tape_name} -d" # -d in daemon mode cause hooks run in the current shell session not in the background
 # ]
 # eject = [
 #     # "hyprctl reload",
-#     # "qs kill",
+#     # "qs kill", 
 #     # "waybar &"
 # ]
 "#
