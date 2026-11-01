@@ -114,6 +114,16 @@ cd tapes-v2
 cargo install --path .
 ```
 
+### Shell Completion
+
+For shell completion, add the following to your .zshrc or .bashrc or *other* depending on your shell
+
+```bash
+source <(COMPLETE=YOUR_SHELL_NAME_HERE tapes-v2)
+```
+
+tapes shell completion supports fish, zsh, bash, nushell and elvish 
+
 ---
 
 ## Commands
