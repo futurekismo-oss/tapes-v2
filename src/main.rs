@@ -15,9 +15,6 @@ use util::get_tapes_data_path;
 fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
 
-    let state_path = get_tapes_data_path()?.join("state.json");
-    let mut app = AppState::load(state_path)?;
-
     init_logging(cli.logging);
     info!("Tapes v2 startup");
 
@@ -28,17 +25,25 @@ fn main() -> Result<(), anyhow::Error> {
             path,
             dry_run,
             no_hooks,
-        } => insert::run(&mut app, name, path, dry_run, no_hooks, cli.quiet)?,
-        Commands::Status => status::show(app, cli.verbose)?,
-        Commands::Eject { dry_run, no_hooks } => eject::run(&mut app, dry_run, no_hooks, cli.quiet)?,
-      
-        Commands::Install { source, name, branch, dir, no_hooks } => {
-            install::run(&source, name, branch, dir, no_hooks)?
+        } => insert::run(&mut load_app()?, name, path, dry_run, no_hooks, cli.quiet)?,
+        Commands::Status => status::show(load_app()?, cli.verbose)?,
+        Commands::Eject { dry_run, no_hooks } => {
+            eject::run(&mut load_app()?, dry_run, no_hooks, cli.quiet)?
         }
-        _ => todo!(),
+        Commands::Install { source, name, branch, dir, no_hooks } => {
+            install::run(&source, name, branch, dir, no_hooks)?;
+        }
+        Commands::Commit => {
+            anyhow::bail!("The 'commit' command is not yet implemented.");
+        }
     }
 
     Ok(())
+}
+
+fn load_app() -> Result<AppState, anyhow::Error> {
+    let state_path = get_tapes_data_path()?.join("state.json");
+    AppState::load(state_path)
 }
 
 fn init_logging(logging: bool) {

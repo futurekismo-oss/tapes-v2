@@ -5,25 +5,37 @@ use std::path::{Path, PathBuf};
 
 use crate::cli::insert::Target;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct AppState {
     pub active_tape: Option<String>,
     pub path: Option<PathBuf>,
-    pub targets: Option<HashMap<String, Target>>
+    pub targets: Option<HashMap<String, Target>>,
 }
 
 impl AppState {
     pub fn load<P: AsRef<Path>>(file_path: P) -> Result<Self, anyhow::Error> {
-        if !file_path.as_ref().exists() {
-            return Ok(AppState {
-                active_tape: None,
-                path: None,
-                targets: None,
-            });
+        let path = file_path.as_ref();
+        if !path.exists() {
+            return Ok(AppState::default());
         }
-        let content = fs::read_to_string(file_path)?;
-        let state = serde_json::from_str(&content)?;
-        Ok(state)
+        let content = fs::read_to_string(path)?;
+        if content.trim().is_empty() {
+            return Ok(AppState::default());
+        }
+        match serde_json::from_str(&content) {
+            Ok(state) => Ok(state),
+            Err(err) => {
+                log::warn!(
+                    "Corrupted state file at {}: {}. Falling back to default.",
+                    path.display(),
+                    err
+                );
+                if let Err(e) = fs::copy(path, path.with_extension("json.bak")) {
+                    log::debug!("Could not backup corrupted state file: {e}");
+                }
+                Ok(AppState::default())
+            }
+        }
     }
 
     pub fn save<P: AsRef<Path>>(&self, file_path: P) -> Result<(), anyhow::Error> {

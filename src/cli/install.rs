@@ -100,7 +100,7 @@ pub fn run(
         };
 
         // add the repo url and the path
-        cmd.arg(&url).arg(&clone_destination);
+        cmd.arg(&url).arg(clone_destination);
 
         info!("git command: {:?}", cmd);
 
@@ -187,9 +187,9 @@ desc = "Tape installed from {source}"
 
 fn normalize_git_url(source: &str) -> String {
     if !source.contains("://") && !source.starts_with("git@") && source.contains('/') {
-        return format!("https://github.com/{}.git", source.trim_end_matches(".git"));
+        format!("https://github.com/{}.git", source.trim_end_matches(".git"))
     } else {
-        return source.to_string();
+        source.to_string()
     }
 }
 
@@ -216,5 +216,5 @@ fn copy_dir(source: &Path, destination: &Path) -> Result<(), anyhow::Error> {
         }
     }
 
-    return Ok(());
+    Ok(())
 }

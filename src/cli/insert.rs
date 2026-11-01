@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::bail;
 use dirs::{config_dir, home_dir};
-use log::{error, info};
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -35,6 +35,11 @@ pub fn run(
     let config_dir = config_dir().expect("config dir should exist");
     let home = home_dir().expect("Home dir should exist");
 
+    // check tape exists first before doing anything or asking to eject
+    let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
+    let tape_name = manifest.tape.name.clone();
+
+    // another tape in? ask user to eject it
     if app.active_tape.is_some() && !dry_run {
         if !yes_or_no_prompt("Another tape is currently inserted.\nEject?") {
             bail!("Another tape is currently inserted, doing nothing, exiting");
@@ -42,11 +47,10 @@ pub fn run(
 
         let eject_staging = home.join(".config.tapes");
         eject_tapes(app, &config_dir, &eject_staging, quiet, no_hooks)?;
+        save_state_data(app)?;
     }
 
     let new_config_dir = home.join(".config.tapes");
-    let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
-    let tape_name = manifest.tape.name.clone();
 
     if config_dir.is_symlink() {
         bail!("{config_dir:?} is a symlink, prone to fail");
@@ -55,7 +59,7 @@ pub fn run(
     app.path = Some(tape_path);
     app.active_tape = Some(tape_name);
 
-    let targets:  HashMap<String, Target> = resolve_targets(app, &new_config_dir)?;
+    let targets: HashMap<String, Target> = resolve_targets(app, &new_config_dir)?;
 
     if dry_run {
         println!("Created {new_config_dir:?}...");
@@ -71,7 +75,6 @@ pub fn run(
     }
 
     app.targets = Some(targets);
-
 
     if new_config_dir.exists() {
         info!("{new_config_dir:?} exists - something has gone wrong");
@@ -89,19 +92,19 @@ pub fn run(
         app.targets.as_ref().expect("app.targets should exist"),
         quiet,
     ) {
-        error!("symlink_targets failed: {err}");
+        let _ = fs::remove_dir_all(&new_config_dir);
         return Err(err);
     }
 
     if let Err(err) = atomic_swap(&config_dir, &new_config_dir) {
-        error!("atomic swap failed: {err}");
+        let _ = fs::remove_dir_all(&new_config_dir);
         return Err(err.into());
     }
     info!("atomic swapped: {config_dir:?} -> {new_config_dir:?}");
 
     println!(
         "Inserted: {}",
-        app.active_tape.as_deref().unwrap().to_string()
+        app.active_tape.as_deref().unwrap_or_default()
     );
 
     save_state_data(app)?;
@@ -116,8 +119,9 @@ pub fn resolve_tape(
     path: Option<PathBuf>,
 ) -> anyhow::Result<(PathBuf, TapeManifest)> {
     if let Some(name) = name {
-        let manifest = get_tapes_data(name)?;
-        return Ok((get_tapes_default_path()?.join(name), manifest));
+        let name_lower = name.to_lowercase();
+        let manifest = get_tapes_data(&name_lower)?;
+        return Ok((get_tapes_default_path()?.join(&name_lower), manifest));
     }
 
     if let Some(p) = path {
@@ -145,17 +149,22 @@ fn resolve_targets(
     new_config_dir: &Path,
 ) -> Result<HashMap<String, Target>, anyhow::Error> {
     let config_dir = config_dir().expect("Config dir should exist");
+    let mut targets = HashMap::with_capacity(64);
 
-    let configs = find_targets(&config_dir)?
-        .into_iter()
-        .map(|p| map_target(p, new_config_dir, false));
+    if config_dir.exists() {
+        for target_path in find_targets(&config_dir)? {
+            let (name, target) = map_target(target_path, new_config_dir, false);
+            targets.insert(name, target);
+        }
+    }
 
     let tapes_path = app.path.as_deref().expect("path just set");
-    let tapes = find_targets(tapes_path)?
-        .into_iter()
-        .map(|p| map_target(p, new_config_dir, true));
+    for target_path in find_targets(tapes_path)? {
+        let (name, target) = map_target(target_path, new_config_dir, true);
+        targets.insert(name, target);
+    }
 
-    Ok(configs.chain(tapes).collect())
+    Ok(targets)
 }
 
 fn map_target(target_path: PathBuf, new_config_dir: &Path, from_tapes: bool) -> (String, Target) {
@@ -182,15 +191,14 @@ fn symlink_targets(
     targets_map: &HashMap<String, Target>,
     quiet: bool,
 ) -> Result<(), anyhow::Error> {
-    let targets: Vec<&Target> = targets_map.values().collect();
-
-    for target in &targets {
+    for target in targets_map.values() {
         if let Err(e) = unix_fs::symlink(&target.target_path, &target.symlink_dest) {
-            error!(
-                "Error: {e}, failed to symlink {:?} -> {:?}",
-                target.target_path, target.symlink_dest
-            );
-            continue;
+            return Err(anyhow::anyhow!(
+                "Failed to create symlink {:?} -> {:?}: {}",
+                target.symlink_dest,
+                target.target_path,
+                e
+            ));
         }
 
         if !quiet {
