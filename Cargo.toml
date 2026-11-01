@@ -7,6 +7,9 @@ readme = "README.md"
 homepage = "https://github.com/futurekismo-oss/tapes-v2"
 repository = "https://github.com/futurekismo-oss/tapes-v2"
 license = "MIT"
+exclude = [
+  "media/",
+]
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }-v{ version }{ archive-suffix }"
