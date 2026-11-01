@@ -1,9 +1,5 @@
-use clap::CommandFactory;
 use clap_complete::engine::{CompletionCandidate, ValueCompleter};
-use clap_complete::{Shell, generate};
-use log::info;
 use std::ffi::OsStr;
-use std::io;
 
 use crate::util::{get_all_tapes_in_dir, get_tapes_default_path};
 
