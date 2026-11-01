@@ -3,10 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use dirs::{config_dir, data_dir, home_dir};
 use log::info;
-use nix::fcntl::{renameat2, RenameFlags};
+use nix::fcntl::{RenameFlags, renameat2};
 
 use crate::{state::AppState, toml::TapeManifest};
 
@@ -155,4 +155,21 @@ pub fn yes_or_no_prompt(message: &str) -> bool {
     std::io::stdin().read_line(&mut input).unwrap();
 
     input.trim().to_lowercase() == "y"
+}
+
+pub fn get_all_tapes_in_dir(tapes_path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
+    let mut found_tapes: Vec<PathBuf> = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(&tapes_path) {
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() && path.join("tape.toml").exists() {
+                found_tapes.push(path);
+            }
+        }
+    }
+
+    Ok(found_tapes)
 }

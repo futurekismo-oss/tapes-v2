@@ -1,8 +1,11 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     toml::TapeManifest,
-    util::{find_targets, get_tapes_data, get_tapes_default_path},
+    util::{find_targets, get_all_tapes_in_dir, get_tapes_data, get_tapes_default_path},
 };
 
 pub fn run(name: Option<String>) -> Result<(), anyhow::Error> {
@@ -16,24 +19,18 @@ pub fn run(name: Option<String>) -> Result<(), anyhow::Error> {
     } else {
         println!("All Tapes (in ~/.tapes)");
 
-        let mut count = 0;
-        if let Ok(entries) = fs::read_dir(&tapes_path) {
-            for entry in entries {
-                let entry = entry?;
-                let path = entry.path();
+        let tapes = get_all_tapes_in_dir(&tapes_path)?;
 
-                if path.is_dir()
-                    && path.join("tape.toml").exists()
-                    && let Some(name) = path.file_name().and_then(|n| n.to_str())
-                {
-                    println!("- {name}: {}", path.display());
-                    count += 1;
-                }
-            }
+        if tapes.is_empty() {
+            println!("No tapes installed yet");
+
+            return Ok(());
         }
 
-        if count == 0 {
-            println!("No tapes installed yet.");
+        for tape in tapes {
+            if let Some(name) = tape.file_name().and_then(|n| n.to_str()) {
+                println!("- {name}: {}", tape.display());
+            }
         }
     }
 
