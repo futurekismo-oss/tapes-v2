@@ -5,7 +5,8 @@ pub mod state;
 pub mod toml;
 pub mod util;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use clap_complete::CompleteEnv;
 use cli::structs::Cli;
 use log::info;
 
@@ -15,6 +16,10 @@ use state::AppState;
 use crate::{cli::completions, util::get_tapes_data_path};
 
 fn main() -> Result<(), anyhow::Error> {
+    // Tab Completion for tapes dynamically
+    // It must be at the top here so regular command parsing doesnt interefare
+    CompleteEnv::with_factory(Cli::command).complete();
+
     let cli = Cli::parse();
 
     let tapes_data_path = get_tapes_data_path()?;
@@ -47,10 +52,6 @@ fn main() -> Result<(), anyhow::Error> {
         }
         Commands::Commit => {
             anyhow::bail!("The 'commit' command is not yet implemented.");
-        }
-
-        Commands::Completions { shell } => {
-            completions::print_completions::<Cli>(shell)?;            
         }
     }
 

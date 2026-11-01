@@ -1,9 +1,14 @@
+use crate::completions::TapeCompleter;
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
+use clap_complete::engine::ArgValueCompleter;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[command(name = "tape", version, about = "Atomic per-target dotfile switcher (v2)")]
+#[command(
+    version,
+    about = "Atomic per-target dotfile switcher (v2)"
+)]
 pub struct Cli {
     /// Enable logging output
     #[arg(short, long, global = true)]
@@ -16,17 +21,17 @@ pub struct Cli {
     /// Reduce the verbosity of commands
     #[arg(short, long, global = true)]
     pub quiet: bool,
-  
-    #[command(subcommand)]
-    pub command: Commands
-}
 
+    #[command(subcommand)]
+    pub command: Commands,
+}
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Insert a tape from the library or an arbitrary path.
     Insert {
         /// Library name (e.g. `dms`). Defaults to manifest name with --path.
+        #[arg(add = ArgValueCompleter::new(TapeCompleter))]
         name: Option<String>,
         /// Arbitrary tape directory (e.g. a cloned ii-end4 fork).
         #[arg(long)]
@@ -53,6 +58,7 @@ pub enum Commands {
     /// List library tapes or detail one.
     Show {
         /// Name of tape
+        #[arg(add = ArgValueCompleter::new(TapeCompleter))]
         name: Option<String>,
     },
 
@@ -76,16 +82,7 @@ pub enum Commands {
         /// Skip install hooks.
         #[arg(long)]
         no_hooks: bool,
-       
     },
 
-   Commit,
-
-   /// Generate Shell completions [zsh, bash, fish]
-   Completions {
-       /// Target shell
-       #[arg(value_enum)]
-       shell: Shell,
-   },
-       
+    Commit,
 }
