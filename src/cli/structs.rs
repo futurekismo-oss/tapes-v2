@@ -1,4 +1,5 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -78,6 +79,13 @@ pub enum Commands {
        
     },
 
-    Commit,
+   Commit,
+
+   /// Generate Shell completions [zsh, bash, fish]
+   Completions {
+       /// Target shell
+       #[arg(value_enum)]
+       shell: Shell,
+   },
        
 }

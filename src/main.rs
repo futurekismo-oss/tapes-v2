@@ -12,7 +12,7 @@ use log::info;
 use cli::{eject, insert, install, show, status, structs::Commands};
 use state::AppState;
 
-use crate::util::get_tapes_data_path;
+use crate::{cli::completions, util::get_tapes_data_path};
 
 fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
@@ -47,6 +47,10 @@ fn main() -> Result<(), anyhow::Error> {
         }
         Commands::Commit => {
             anyhow::bail!("The 'commit' command is not yet implemented.");
+        }
+
+        Commands::Completions { shell } => {
+            completions::print_completions::<Cli>(shell)?;            
         }
     }
 
