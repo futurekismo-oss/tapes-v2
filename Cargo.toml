@@ -2,7 +2,7 @@
 name = "tapes-v2"
 version = "0.1.4-beta"
 edition = "2024"
-description = "Swap your whole rice in one command. Eject it with one more. Atomic dotfiles switching for Linux."
+description = "Atomic dotfiles switcher for Linux and Ricing."
 readme = "README.md"
 homepage = "https://github.com/futurekismo-oss/tapes-v2"
 repository = "https://github.com/futurekismo-oss/tapes-v2"
