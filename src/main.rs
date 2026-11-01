@@ -1,20 +1,21 @@
 mod cli;
+pub mod hooks;
+pub mod logger;
 pub mod state;
 pub mod toml;
 pub mod util;
-pub mod hooks;
 
 use clap::Parser;
 use cli::structs::Cli;
-use log::{info, LevelFilter};
+use log::info;
 
-use cli::{insert, show, status, install, eject, structs::Commands};
+use cli::{eject, insert, install, show, status, structs::Commands};
 use state::AppState;
 
 fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
 
-    init_logging(cli.logging);
+    logger::init(cli.logging);
     info!("Tapes v2 startup");
 
     match cli.command {
@@ -42,22 +43,4 @@ fn main() -> Result<(), anyhow::Error> {
 
 fn load_app() -> Result<AppState, anyhow::Error> {
     AppState::load_current()
-}
-
-fn init_logging(logging: bool) {
-    let mut builder = env_logger::Builder::new();
-
-    if let Ok(rust_log_env) = std::env::var("RUST_LOG") {
-        builder.parse_filters(&rust_log_env);
-    } else {
-        let filter_level = if logging {
-            LevelFilter::Trace
-        } else {
-            LevelFilter::Warn
-        };
-
-        builder.filter_level(filter_level);
-    };
-
-    builder.init();
 }

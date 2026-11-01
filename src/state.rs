@@ -19,7 +19,7 @@ impl AppState {
         if !dir.exists() {
             fs::create_dir_all(&dir)?;
         }
-        Ok(dir.join("state.json"))
+        Ok(dir.join("state.toml"))
     }
 
     pub fn load_current() -> Result<Self, anyhow::Error> {
@@ -39,7 +39,7 @@ impl AppState {
         if content.trim().is_empty() {
             return Ok(AppState::default());
         }
-        match serde_json::from_str(&content) {
+        match toml::from_str(&content) {
             Ok(state) => Ok(state),
             Err(err) => {
                 log::warn!(
@@ -47,7 +47,7 @@ impl AppState {
                     path.display(),
                     err
                 );
-                if let Err(e) = fs::copy(path, path.with_extension("json.bak")) {
+                if let Err(e) = fs::copy(path, path.with_extension("toml.bak")) {
                     log::debug!("Could not backup corrupted state file: {e}");
                 }
                 Ok(AppState::default())
@@ -70,7 +70,7 @@ impl AppState {
         temp_file_name.push(".tmp");
         let temp_path = parent.join(temp_file_name);
 
-        let content = serde_json::to_string_pretty(self)?;
+        let content = toml::to_string_pretty(self)?;
 
         fs::write(&temp_path, content)?;
         fs::rename(&temp_path, path)?;

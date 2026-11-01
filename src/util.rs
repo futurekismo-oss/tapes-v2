@@ -84,6 +84,7 @@ pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
     const IGNORED: &[&str] = &[
         "tape.toml",
         ".git",
+        ".gitattributes",
         "README.md",
         ".github",
         ".gitignore",
