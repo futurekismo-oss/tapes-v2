@@ -30,6 +30,46 @@ https://github.com/user-attachments/assets/6791a91b-a3be-429b-9fd0-adc34fc93b08
 
 ---
 
+## Installation
+
+**Install script** (grabs the latest release, re-run it to update)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/futurekismo-oss/tapes-v2/main/install.sh | bash
+```
+
+**Cargo**
+
+```bash
+cargo install tapes-v2
+cargo binstall tapes-v2 # prebuilt binary instead of compiling
+```
+
+**Nix**
+
+```bash
+nix run github:futurekismo-oss/tapes-v2 -- --help
+nix profile install github:futurekismo-oss/tapes-v2
+```
+
+**Arch** (PKGBUILDs are in [`packaging/arch`](packaging/arch), `PKGBUILD.bin` is the prebuilt one)
+
+```bash
+cd packaging/arch && makepkg -si
+```
+
+**From source**
+
+```bash
+git clone https://github.com/futurekismo-oss/tapes-v2
+cd tapes-v2
+cargo install --path .
+```
+
+Run `tapes-v2 --version` to check it worked. If it's not found, add `~/.local/bin` (or `~/.cargo/bin`) to your `$PATH`.
+
+---
+
 ## Quickstart
 
 Either package a `~/.config` as a tape (put in it a folder, move to `~/.tapes` and add a tape.toml inside), or install one directly from a repo. Then, you can easily insert the tape to try it out and eject it just as easily to return back to your old `~/.config`.
