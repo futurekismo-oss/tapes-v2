@@ -194,8 +194,6 @@ Thanks to these wonderful individuals for
 
 Contributions are welcome. See [Contributing.md](Contributing.md) for the guidelines.
 
-The internals of how Tapes works live in [INTERNALS.md](INTERNALS.md) — worth a read before you touch the code.
-
 ---
 
 ## License
