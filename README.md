@@ -123,8 +123,8 @@ Run `tapes-v2 --version` to ensure it worked. Make sure to add `~/.local/bin` to
 **Cargo**
 
 ```bash
-cargo install tapes-v2@v0.1.4-beta
-cargo binstall tapes-v2@v0.1.4-beta # prebuilt binary instead of compiling
+cargo install tapes-v2@v0.1.5-beta
+cargo binstall tapes-v2@v0.1.5-beta # prebuilt binary instead of compiling
 ```
 
 Try to add `~/.cargo/bin` to your `$PATH` if `tapes-v2 --version` doesn't work
