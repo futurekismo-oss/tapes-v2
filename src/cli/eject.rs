@@ -19,10 +19,15 @@ pub fn run(
     no_hooks: bool,
     quiet: bool,
 ) -> Result<(), anyhow::Error> {
-    info!("eject command");
+    info!("running eject command");
 
     let config_dir = config_dir().expect("Config dir should exist");
     let tapes_config_dir = get_staging_config_path()?;
+
+    info!(
+        "config_dir: {:?}\ntapes_config_dir: {:?}",
+        config_dir, tapes_config_dir
+    );
 
     validate_correct_tapes_dir_structure().context("No tapes is currently inserted")?;
 
@@ -30,6 +35,8 @@ pub fn run(
         .active_tape
         .clone()
         .unwrap_or_else(|| "unknown".to_string());
+
+    info!("Tape Name: {:?}", tape_name);
 
     if dry_run {
         println!("swapped {config_dir:?} -> {tapes_config_dir:?}");
@@ -85,6 +92,9 @@ pub fn eject_tapes(
     if !quiet {
         println!("removed {tapes_config_dir:?}");
     }
+
+    info!("running eject hooks now");
+    info!("manifest: {:#?}", manifest);
 
     if let Some(m) = manifest {
         run_eject_hooks(m, no_hooks, quiet)?;

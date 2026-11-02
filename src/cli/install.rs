@@ -1,5 +1,5 @@
 use anyhow::{Context, bail};
-use log::info;
+use log::{error, info};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -19,6 +19,7 @@ pub fn run(
     let source_path = PathBuf::from(source);
 
     let is_path = source_path.exists();
+    info!("source_path: {source_path:?}");
 
     let tape_name = if let Some(n) = name {
         n.trim().to_string()
@@ -41,10 +42,19 @@ pub fn run(
 
     let tape_name = tape_name.to_lowercase(); // Make the dir name lowercase, no matter what
 
+    info!("tape name: {tape_name}");
+
     let tapes_dir = get_tapes_default_path()?;
     let target_dir = tapes_dir.join(&tape_name);
 
+    info!("tapes_dir: {:?}, target_dir: {:?}", tapes_dir, target_dir);
+
     if target_dir.exists() {
+        error!(
+            "Tape {} already exists at {}",
+            tape_name,
+            target_dir.display()
+        );
         bail!(
             "Tape {} already exists at {}",
             tape_name,
@@ -63,6 +73,8 @@ pub fn run(
             .unwrap()
             .as_nanos()
     ));
+
+    info!("temp_clone_dir: {temp_clone_dir:?}");
 
     // copy or clone based on whether exists or not
     if is_path {
@@ -164,6 +176,8 @@ desc = "Tape installed from {source}"
         // Record format: simple name and source tracking
         let record = format!("name={tape_name}, source={source}\n");
 
+        info!("record: {record}");
+
         // Append entry to records.txt (create if not exists)
         let _ = fs::OpenOptions::new()
             .create(true)
@@ -176,7 +190,13 @@ desc = "Tape installed from {source}"
     let manifest = crate::util::load_manifest(&target_dir)?;
     hooks::run_install_hooks(manifest, no_hooks)?;
 
+    info!("ran eject hooks");
+
     // Success confirmation message
+    info!(
+        "Successfully installed tape '{tape_name}' to {}",
+        target_dir.display()
+    );
     println!(
         "Successfully installed tape '{tape_name}' to {}",
         target_dir.display()
@@ -207,6 +227,8 @@ fn copy_dir(source: &Path, destination: &Path) -> Result<(), anyhow::Error> {
         }
 
         let target = destination.join(entry.file_name());
+
+        info!("copying {path:?} -> {target:?}");
 
         // recursive copy for all the subdirectories
         if path.is_dir() {
