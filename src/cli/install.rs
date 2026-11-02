@@ -190,7 +190,7 @@ desc = "Tape installed from {source}"
     let manifest = crate::util::load_manifest(&target_dir)?;
     hooks::run_install_hooks(manifest, no_hooks)?;
 
-    info!("ran eject hooks");
+    info!("ran install hooks");
 
     // Success confirmation message
     info!(
