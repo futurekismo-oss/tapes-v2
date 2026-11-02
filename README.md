@@ -13,6 +13,8 @@ Rewritten to be safer, simpler and truly atomic
 <a href="https://github.com/futurekismo-oss/tapes-v2/issues/new">Report Bug</a>
 &middot;
 <a href="https://github.com/futurekismo-oss/tapes-v2/issues/new">Request Feature</a>
+&middot;
+<a href="https://discord.gg/TVjsGzFAur">Join the Discord</a>
 
 </div>
 
@@ -140,7 +142,7 @@ Thanks to these wonderful individuals for
 
 > [Clover](https://github.com/Cloverthestars) for providing the most encouragement and support, He encouraged the rewrite of tapes turning it from a broken mess to an actual usable utility
 
-> [Marv](shreudi) for encouraging me to build tapes after i pitched the initial idea, without him, tapes would still be a random afternoon thought
+> [Marv](https://github.com/shreudi) for encouraging me to build tapes after i pitched the initial idea, without him, tapes would still be a random afternoon thought
 
 
 ---
