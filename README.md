@@ -99,10 +99,12 @@ Some handy flags for tapes:
 ```bash
 --dry-run # shows the plan without touching any files
 --no-hooks # skip running any hooks
---path # insert a tape straight out any folder
--q # quiet output
--v # verbose output
---logging # show logs, useful for reporting issues and debugging
+-p, --path # insert a tape straight out any folder
+-q, --queit # quiet output
+-v, --verbose # verbose output
+-l, --logging # show logs, useful for reporting issues and debugging
+
+-V, --version # display the current version
 ```
 
 ---
@@ -128,17 +130,17 @@ Now, let's explain the terms you'll come across while using this program.
 
 Thanks to these wonderful individuals for
 
-[erotic-erox](https://github.com/exotic-erox) for calling out some lifecycle bugs on version 0.1.2-beta
+> [erotic-erox](https://github.com/exotic-erox) for calling out some lifecycle bugs on version 0.1.2-beta
 
-[LilaccFlowerr](https://github.com/LilaccFlowerr) for providing the tapes-v2 showcase video and hopefully a gui in the future
+> [LilaccFlowerr](https://github.com/LilaccFlowerr) for providing the tapes-v2 showcase video and hopefully a gui in the future
 
-[saksham_kumar](https://github.com/saksham_kumar) for being a contributor and writing the beloved install command
+> [saksham_kumar](https://github.com/saksham_kumar) for being a contributor and writing the beloved install command
 
-[Mvk](https://github.com/Mvkweb) for providing words of encourgement and support
+> [Mvk](https://github.com/Mvkweb) for providing lots of encouragement and support
 
-[Clover](https://github.com/Cloverthestars) for providing the most encourgement and support, without them tapes wouldn't have gotten a rewrite and would have been the broken mess it was in Cassette-tapes, so massive thanks to him
+> [Clover](https://github.com/Cloverthestars) for providing the most encouragement and support, He encouraged the rewrite of tapes turning it from a broken mess to an actual usable utility
 
-[Marv](shreudi) for encouraging me to make tapes after i pitched the initial idea, without him, tapes would still be an a random idea
+> [Marv](shreudi) for encouraging me to build tapes after i pitched the initial idea, without him, tapes would still be a random afternoon thought
 
 
 ---
