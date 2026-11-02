@@ -7,11 +7,14 @@ use std::time::SystemTime;
 
 struct SimpleLogger {
     file: Mutex<Option<File>>,
+    stderr_level: Mutex<LevelFilter>,
 }
 
 impl Log for SimpleLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= log::max_level()
+        let stderr_enabled = metadata.level() <= *self.stderr_level.lock().unwrap();
+        let file_enabled = self.file.lock().unwrap().is_some();
+        stderr_enabled || file_enabled
     }
 
     fn log(&self, record: &Record) {
@@ -23,8 +26,15 @@ impl Log for SimpleLogger {
 
         let log_entry = format!("[{}] [{}] - {}\n", timestamp, record.level(), record.args());
 
+        let stderr_allowed = match self.stderr_level.lock() {
+            Ok(guard) => record.level() <= *guard,
+            Err(_) => false,
+        };
+
         // Standard output write
-        let _ = std::io::stderr().lock().write_all(log_entry.as_bytes());
+        if stderr_allowed {
+            let _ = std::io::stderr().lock().write_all(log_entry.as_bytes());
+        }
 
         // Flatten file lock & write with let-else
         let Ok(mut guard) = self.file.lock() else {
@@ -52,6 +62,7 @@ impl Log for SimpleLogger {
 
 static LOGGER: SimpleLogger = SimpleLogger {
     file: Mutex::new(None),
+    stderr_level: Mutex::new(LevelFilter::Warn),
 };
 
 pub fn init(logging: bool, log_file_path: Option<&Path>) {
@@ -66,11 +77,15 @@ pub fn init(logging: bool, log_file_path: Option<&Path>) {
         .and_then(|v| v.rsplit('=').next()?.trim().parse().ok())
         .unwrap_or(default);
 
+    if let Ok(mut guard) = LOGGER.stderr_level.lock() {
+        *guard = level;
+    }
+
     // Separated file initialization to maintain early-returns
     setup_file_logger(log_file_path);
 
     if log::set_logger(&LOGGER).is_ok() {
-        log::set_max_level(level);
+        log::set_max_level(LevelFilter::Trace);
     }
 }
 
