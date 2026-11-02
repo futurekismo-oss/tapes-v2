@@ -22,24 +22,6 @@ Rewritten to be safer, simpler and truly atomic
 
 ---
 
-## Why Use Tapes?
-
-If you're like me and a big unixporn fan, you've definitely found yourself wanting to try new rices, however the worry of trashing your old config holds you back. Install scripts barely care; they frequentely override previous configs or just backup the entire config folder and make a new one, forcing you go to back and manually move files to fix the mess. 
-
-Tapes aims to solve this by making trying out new rices and reverting back to your old config as frictionless as possible as while being safe and fast. Other dotfile managers have come close, but don't really give this feeling of pop in a config and pop it out as fast (this is where the name came from). The initial implementation (v1) was hasty and buggy. It was a prototype.
-
-Now, let's explain the terms you'll come across while using this program.
-
-**Tape**: A tape is ~/.config folder, a rice, a dotfile; whatever you choose to call it. It contains folders like `quickshell` and `hypr`. Tapes can take this config folder and swap its `targets` or folders with your own, allowing you to use the example quickshell and hypr config in this tape as your config without losing things like `chromium` keys (which are stored in `~/.config/chromium` for some reason).
-
-**Target**: A target is a folder in a tape, a `quickshell` folder, or `hypr` folder, but a target can also be a file e.g `.zshrc`, `starship.toml`. These targets tell tapes the config you wanna insert into your `~/.config` folder.
-
-**Atomic**: You've heard me say it a lot. It means there is no in-between; when tapes insert a tapes, it takes the targets from your `~/.config` folder, asks the tape which config it provides, and then builds an entire valid config folder called `~/.config.tapes` made up of symlinks from the tape and your previous config. It then uses the renameat linux syscall to swap your `~/.config` with `~/.config.tapes` (meaning your old config becomes `~/.config.tapes` and vice versa), and as there is no in-between state where your config is missing, it can call itself atomic, since anything before the swap can be easily rolled back by deleting `~/.config.tapes`.
-
-**Hooks**: Shell commands in the tape.toml. Tapes can run them after insert, after eject or after install. *Make sure to read these if a repo provides its own tape.toml, even though it shouldn't.*
-
----
-
 ## Tapes in Action
 
 https://github.com/user-attachments/assets/6791a91b-a3be-429b-9fd0-adc34fc93b08
@@ -125,6 +107,23 @@ Some handy flags for tapes:
 
 ---
 
+## Why Use Tapes?
+If you're like me and a big unixporn fan, you've definitely found yourself wanting to try new rices, however the worry of trashing your old config holds you back. Install scripts barely care; they frequentely override previous configs or just backup the entire config folder and make a new one, forcing you go to back and manually move files to fix the mess. 
+
+Tapes aims to solve this by making trying out new rices and reverting back to your old config as frictionless as possible as while being safe and fast. Other dotfile managers have come close, but don't really give this feeling of pop in a config and pop it out as fast (this is where the name came from). The initial implementation (v1) was hasty and buggy. It was a prototype.
+
+Now, let's explain the terms you'll come across while using this program.
+
+**Tape**: A tape is ~/.config folder, a rice, a dotfile; whatever you choose to call it. It contains folders like `quickshell` and `hypr`. Tapes can take this config folder and swap its `targets` or folders with your own, allowing you to use the example quickshell and hypr config in this tape as your config without losing things like `chromium` keys (which are stored in `~/.config/chromium` for some reason).
+
+**Target**: A target is a folder in a tape, a `quickshell` folder, or `hypr` folder, but a target can also be a file e.g `.zshrc`, `starship.toml`. These targets tell tapes the config you wanna insert into your `~/.config` folder.
+
+**Atomic**: You've heard me say it a lot. It means there is no in-between; when tapes insert a tapes, it takes the targets from your `~/.config` folder, asks the tape which config it provides, and then builds an entire valid config folder called `~/.config.tapes` made up of symlinks from the tape and your previous config. It then uses the renameat linux syscall to swap your `~/.config` with `~/.config.tapes` (meaning your old config becomes `~/.config.tapes` and vice versa), and as there is no in-between state where your config is missing, it can call itself atomic, since anything before the swap can be easily rolled back by deleting `~/.config.tapes`.
+
+**Hooks**: Shell commands in the tape.toml. Tapes can run them after insert, after eject or after install. *Make sure to read these if a repo provides its own tape.toml, even though it shouldn't.*
+
+---
+
 ## Acknowledgements
 
 Thanks to these wonderful individuals for
@@ -138,6 +137,9 @@ Thanks to these wonderful individuals for
 [Mvk](https://github.com/Mvkweb) for providing words of encourgement and support
 
 [Clover](https://github.com/Cloverthestars) for providing the most encourgement and support, without them tapes wouldn't have gotten a rewrite and would have been the broken mess it was in Cassette-tapes, so massive thanks to him
+
+[Marv](shreudi) for encouraging me to make tapes after i pitched the initial idea, without him, tapes would still be an a random idea
+
 
 ---
 
