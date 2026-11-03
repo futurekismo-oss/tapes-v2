@@ -79,6 +79,4 @@ pub enum Commands {
         #[arg(long)]
         no_hooks: bool,
     },
-
-    Commit,
 }

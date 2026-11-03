@@ -50,9 +50,6 @@ fn main() -> Result<(), anyhow::Error> {
         } => {
             install::run(&source, name, branch, dir, no_hooks)?;
         }
-        Commands::Commit => {
-            anyhow::bail!("The 'commit' command is not yet implemented.");
-        }
     }
 
     Ok(())

@@ -1,6 +1,11 @@
 { pkgs, ... }: {
   languages.rust.enable = true;
 
+  packages = with pkgs; [
+    sccache
+    mold
+  ];
+
   env.RUST_LOG = "trace";
 
   scripts.bump-version.exec = ''
