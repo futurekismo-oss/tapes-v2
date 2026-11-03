@@ -20,10 +20,15 @@ jobs:
     - name: Update repository values
       run: |
         TAG_VERSION=${GITHUB_REF#refs/tags/v}
-        files=$(grep -rl "PLACEHORN_VERSION" . --exclude-dir=.git --exclude-dir=target || true)
+        files=$(grep -rl "PLACEHOLDER_VERSION" . --exclude-dir=.git --exclude-dir=target || true)
         if [ -n "$files" ]; then
           echo "$files" | xargs sed -i "s/PLACEHOLDER_VERSION/$TAG_VERSION/g"
         fi
+
+    - name: Install build tools (mold, sccache)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mold clang sccache
 
     - name: Build (Release Mode)
       run: cargo build --release --verbose
