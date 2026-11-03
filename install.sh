@@ -91,6 +91,42 @@ echo ""
 echo "Successfully installed $BINARY_NAME to $TARGET_DIR/$BINARY_NAME"
 echo "Created configuration directory at $CONFIG_DIR"
 
+if [ -n "$TERM" ]; then
+  CURRENT_SHELL=$(basename "$SHELL" 2>/dev/null || echo "")
+  case "$CURRENT_SHELL" in
+  bash)
+    echo ""
+    echo "To enable tab completion for Bash, add this to your ~/.bashrc:"
+    echo "    source <(COMPLETIONS=bash $BINARY_NAME)"
+    ;;
+  zsh)
+    echo ""
+    echo "To enable tab completion for Zsh, add this to your ~/.zshrc:"
+    echo "    source <(COMPLETIONS=zsh $BINARY_NAME)"
+    ;;
+  fish)
+    echo ""
+    echo "To enable tab completion for Fish, add this to your ~/.config/fish/config.fish:"
+    echo "    COMPLETIONS=fish $BINARY_NAME | source"
+    ;;
+  nu* | nushell)
+    echo ""
+    echo "To enable tab completion for Nushell, add this to your Nushell config:"
+    echo "    COMPLETIONS=nushell $BINARY_NAME | save --force ~/.cache/tapes-v2/completions.nu"
+    echo "    # and add 'use ~/.cache/tapes-v2/completions.nu' to your config.nu"
+    ;;
+  elvish)
+    echo ""
+    echo "To enable tab completion for Elvish, add this to your Elvish rc:"
+    echo "    COMPLETIONS=elvish $BINARY_NAME | eval"
+    ;;
+  *)
+    echo ""
+    echo "For tab completion, run with the appropriate shell environment variable (e.g., COMPLETIONS=bash/zsh/fish/nushell/elvish)."
+    ;;
+  esac
+fi
+
 if [ "$NEED_PATH_WARN" = true ]; then
   echo ""
   echo "Warning: Neither ~/.local/bin nor /usr/local/bin were found in your \$PATH."
