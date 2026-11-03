@@ -146,6 +146,11 @@ cargo install --path .
 
 ---
 
+Tapes supports tab completion. Just add ``source <(COMPLETIONS=zsh tapes-v2)`` to your shell init (`.zshrc`, or `.bashrc`). Replace `zsh` with your chosen shell. It supports (`zsh`, `fish`, `bash`, `elvish` and `nushell`)
+
+> **Tip**: If you find the name `tapes-v2` annoying you can alias it to `tapes`, the binary can't be renamed tapes as it's taken on [crates.io](https://crates.io/search?q=tapes)
+
+
 ## Why Use Tapes?
 If you're like me and a big unixporn fan, you've definitely found yourself wanting to try new rices, however the worry of trashing your old config holds you back. Install scripts barely care; they frequentely override previous configs or just backup the entire config folder and make a new one, forcing you go to back and manually move files to fix the mess. 
 
