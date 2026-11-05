@@ -118,6 +118,7 @@ Some handy flags for tapes:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/futurekismo-oss/tapes/main/install.sh | bash
 ```
+
 Run `tapes --version` to ensure it worked. Make sure to add `~/.local/bin` to your `$PATH`.
 
 **Cargo**

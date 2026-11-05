@@ -1,6 +1,7 @@
 {
   rustPlatform,
   lib,
+  pkgs,
 }:
 
 rustPlatform.buildRustPackage (finalAttrs: {
@@ -9,7 +10,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   src = ../.;
 
-  cargoHash = "sha256-m5WbWwT9veVZSH6/sSruClF927OEPGQe/IWVSG4gW28=";
+  nativeBuildInputs = [
+   pkgs.mold
+  ];
+
+  cargoHash = "sha256-i2cT0BILjcK9WqqKUoq2BWVDFbO9ujLkGRiJAnkCoRU=";
+
+  env.RUSTC_WRAPPER = "";
 
   meta = {
     description = "Swap your whole rice in one command. Eject it with one more. Atomic dotfiles switching for Linux.";

@@ -4,22 +4,23 @@ version = "0.1.6-beta"
 edition = "2024"
 description = "Atomic dotfiles switcher for Linux and Ricing."
 readme = "README.md"
-homepage = "https://github.com/futurekismo-oss/tapes-v2"
-repository = "https://github.com/futurekismo-oss/tapes-v2"
+homepage = "https://github.com/futurekismo-oss/tapes"
+repository = "https://github.com/futurekismo-oss/tapes"
 license = "MIT"
 exclude = [
   "media/",
 ]
 
-[[bin]]
-name = "tapes"
-path = "src/main.rs"
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }-v{ version }{ archive-suffix }"
 bin-dir = "{ name }-{ target }-v{ version }/{ bin }{ binary-ext }"
 pkg-fmt = "tgz"
 disabled-strategies = ["quick-install", "compile"]
+
+[[bin]]
+name = "tapes"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.104"

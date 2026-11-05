@@ -3,6 +3,7 @@ set -e
 
 REPO="futurekismo-oss/tapes"
 BINARY_NAME="tapes"
+LEGACY_BINARY_NAME="tapes-v2"
 CONFIG_DIR="$HOME/.tapes"
 
 echo "==> Checking system environment..."
@@ -11,18 +12,29 @@ if [ -f /etc/NIXOS ]; then
   echo ""
   echo "NixOS detected."
   echo "On NixOS, traditional binary installers are discouraged because binaries won't link against dynamic libraries properly."
-  echo "Please add 'tapes-v2' to your configuration.nix or home.nix, or run it directly via:"
-  echo ""
+  echo "Recommended options:"
   echo "    nix profile install github:$REPO"
   echo "    # or"
   echo "    nix run github:$REPO -- --help"
   echo ""
-  exit 0
+  printf "Do you still want to proceed with the standard manual binary installation? (y/N) "
+  read -r REPLY </dev/tty
+  case "$REPLY" in
+  [yY][eE][sS] | [yY])
+    echo "==> Proceeding with manual binary installation on NixOS..."
+    ;;
+  *)
+    echo "Aborted."
+    exit 0
+    ;;
+  esac
 fi
 
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then
-  TARGET_ASSET="tapes-v2-x86_64-unknown-linux-gnu"
+  TARGET_ASSET="$BINARY_NAME-x86_64-unknown-linux-gnu"
+
+  echo "Found $TARGET_ASSET"
 else
   echo "Error: Unsupported architecture ($ARCH). Currently, only x86_64 is supported for pre-built binaries."
   exit 1
@@ -38,6 +50,17 @@ elif echo "$PATH" | tr ':' '\n' | grep -q "^/usr/local/bin$"; then
 else
   TARGET_DIR="$HOME/.local/bin"
   NEED_PATH_WARN=true
+fi
+
+LEGACY_BIN="$TARGET_DIR/$LEGACY_BINARY_NAME"
+if [ -x "$LEGACY_BIN" ]; then
+  echo "==> Notice: The binary has been renamed from '$LEGACY_BINARY_NAME' to '$BINARY_NAME'."
+  echo "==> Removing legacy installation at $LEGACY_BIN..."
+  if [ "$TARGET_DIR" = "/usr/local/bin" ]; then
+    sudo rm -f "$LEGACY_BIN"
+  else
+    rm -f "$LEGACY_BIN"
+  fi
 fi
 
 echo "==> Fetching latest release info..."
@@ -112,8 +135,8 @@ if [ -n "$TERM" ]; then
   nu* | nushell)
     echo ""
     echo "To enable tab completion for Nushell, add this to your Nushell config:"
-    echo "    COMPLETIONS=nushell $BINARY_NAME | save --force ~/.cache/tapes-v2/completions.nu"
-    echo "    # and add 'use ~/.cache/tapes-v2/completions.nu' to your config.nu"
+    echo "    COMPLETIONS=nushell $BINARY_NAME | save --force ~/.cache/tapes/completions.nu"
+    echo "    # and add 'use ~/.cache/tapes/completions.nu' to your config.nu"
     ;;
   elvish)
     echo ""
