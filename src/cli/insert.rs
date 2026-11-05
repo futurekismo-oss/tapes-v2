@@ -92,7 +92,7 @@ pub fn run(
     if new_config_dir.exists() {
         error!("{new_config_dir:?} exists - something has gone wrong");
         bail!(
-            ".config.tapes exists, did something go wrong? bug report here https://github.com/futurekismo-oss/tapes-v2/issues"
+            ".config.tapes exists, did something go wrong? bug report here https://github.com/futurekismo-oss/tapes/issues"
         );
     }
 

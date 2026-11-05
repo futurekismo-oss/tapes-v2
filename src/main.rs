@@ -27,7 +27,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     logger::init(cli.logging, Some(&logging_path));
 
-    info!("Tapes v2 startup");
+    info!("Tapes startup");
 
     match cli.command {
         Commands::Show { name } => show::run(name)?,

@@ -6,6 +6,25 @@ BINARY_NAME="tapes"
 LEGACY_BINARY_NAME="tapes-v2"
 CONFIG_DIR="$HOME/.tapes"
 
+install_file() {
+  local src="$1"
+  local dst="$2"
+  if [ -w "$(dirname "$dst")" ]; then
+    mv "$src" "$dst"
+  else
+    sudo mv "$src" "$dst"
+  fi
+}
+
+remove_file() {
+  local target="$1"
+  if [ -w "$target" ] || [ -w "$(dirname "$target")" ]; then
+    rm -f "$target"
+  else
+    sudo rm -f "$target"
+  fi
+}
+
 echo "==> Checking system environment..."
 
 if [ -f /etc/NIXOS ]; then
@@ -33,8 +52,6 @@ fi
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then
   TARGET_ASSET="$BINARY_NAME-x86_64-unknown-linux-gnu"
-
-  echo "Found $TARGET_ASSET"
 else
   echo "Error: Unsupported architecture ($ARCH). Currently, only x86_64 is supported for pre-built binaries."
   exit 1
@@ -52,19 +69,8 @@ else
   NEED_PATH_WARN=true
 fi
 
-LEGACY_BIN="$TARGET_DIR/$LEGACY_BINARY_NAME"
-if [ -x "$LEGACY_BIN" ]; then
-  echo "==> Notice: The binary has been renamed from '$LEGACY_BINARY_NAME' to '$BINARY_NAME'."
-  echo "==> Removing legacy installation at $LEGACY_BIN..."
-  if [ "$TARGET_DIR" = "/usr/local/bin" ]; then
-    sudo rm -f "$LEGACY_BIN"
-  else
-    rm -f "$LEGACY_BIN"
-  fi
-fi
-
 echo "==> Fetching latest release info..."
-LATEST_TAG=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+LATEST_TAG=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
 if [ -z "$LATEST_TAG" ]; then
   echo "Warning: Could not fetch latest release tag. Proceeding with default download..."
@@ -76,7 +82,8 @@ if [ -x "$INSTALLED_BIN" ]; then
   CURRENT_VERSION=$("$INSTALLED_BIN" --version 2>/dev/null | head -n 1 || true)
 
   if [ -n "$CURRENT_VERSION" ] && [ -n "$LATEST_TAG" ]; then
-    if echo "$CURRENT_VERSION" | grep -q "$LATEST_TAG"; then
+    CLEAN_TAG="${LATEST_TAG#v}"
+    if echo "$CURRENT_VERSION" | grep -q "$CLEAN_TAG"; then
       echo "==> $BINARY_NAME is already up to date ($CURRENT_VERSION)."
       exit 0
     else
@@ -91,24 +98,30 @@ fi
 
 RELEASE_URL="https://github.com/$REPO/releases/latest/download/$TARGET_ASSET"
 
-echo "==> Preparing configuration directory ($CONFIG_DIR)..."
-mkdir -p "$CONFIG_DIR"
-
-if [ "$TARGET_DIR" = "$HOME/.local/bin" ]; then
-  mkdir -p "$HOME/.local/bin"
-fi
+echo "==> Preparing target and configuration directories..."
+mkdir -p "$CONFIG_DIR" "$TARGET_DIR"
 
 echo "==> Downloading $BINARY_NAME from GitHub Releases..."
 TEMP_FILE=$(mktemp)
-curl -L "$RELEASE_URL" -o "$TEMP_FILE"
+curl -fsSL "$RELEASE_URL" -o "$TEMP_FILE"
 chmod +x "$TEMP_FILE"
 
 echo "==> Installing to $TARGET_DIR/$BINARY_NAME..."
-if [ "$TARGET_DIR" = "/usr/local/bin" ]; then
-  sudo mv "$TEMP_FILE" "$TARGET_DIR/$BINARY_NAME"
-else
-  mv "$TEMP_FILE" "$TARGET_DIR/$BINARY_NAME"
-fi
+install_file "$TEMP_FILE" "$TARGET_DIR/$BINARY_NAME"
+
+# Clean up legacy binary if it exists (only after successful installation)
+LEGACY_LOCATIONS=(
+  "$TARGET_DIR/$LEGACY_BINARY_NAME"
+  "$(command -v "$LEGACY_BINARY_NAME" 2>/dev/null || true)"
+)
+
+for old_bin in "${LEGACY_LOCATIONS[@]}"; do
+  if [ -n "$old_bin" ] && [ -e "$old_bin" ] && [ "$old_bin" != "$TARGET_DIR/$BINARY_NAME" ]; then
+    echo "==> Notice: The binary has been renamed from '$LEGACY_BINARY_NAME' to '$BINARY_NAME'."
+    echo "==> Removing legacy installation at $old_bin..."
+    remove_file "$old_bin"
+  fi
+done
 
 echo ""
 echo "Successfully installed $BINARY_NAME to $TARGET_DIR/$BINARY_NAME"
