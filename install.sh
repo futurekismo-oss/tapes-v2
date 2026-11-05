@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="futurekismo-oss/tapes-v2"
-BINARY_NAME="tapes-v2"
+REPO="futurekismo-oss/tapes"
+BINARY_NAME="tapes"
 CONFIG_DIR="$HOME/.tapes"
 
 echo "==> Checking system environment..."
