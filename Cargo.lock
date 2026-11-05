@@ -335,7 +335,7 @@ dependencies = [
 
 [[package]]
 name = "tapes-v2"
-version = "0.1.6-beta"
+version = "0.1.6-beta.1"
 dependencies = [
  "anyhow",
  "clap",
