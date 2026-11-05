@@ -5,7 +5,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "tapes";
-  version = "0.1.5-beta";
+  version = "0.1.6-beta";
 
   src = ../.;
 
