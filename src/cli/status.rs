@@ -27,7 +27,7 @@ pub fn show(app: AppState, verbose: bool) -> Result<(), anyhow::Error> {
             if marker.exists() {
                 println!(" - Found marker file at {}", marker.display());
             }
-            println!("You can run 'tapes-v2 eject' to recover your original configuration.");
+            println!("You can run 'tapes eject' to recover your original configuration.");
         } else {
             println!("No tape is currently inserted.");
         }
@@ -38,7 +38,7 @@ pub fn show(app: AppState, verbose: bool) -> Result<(), anyhow::Error> {
     if let Err(error) = validate_correct_tapes_dir_structure() {
         println!("A tape is marked active in state, but directory structure validation failed:\n");
         println!("Has something gone wrong?");
-        println!("Bug Report Here: https://github.com/futurekismo-oss/tapes-v2/issues");
+        println!("Bug Report Here: https://github.com/futurekismo-oss/tapes/issues");
         bail!(error);
     }
 
