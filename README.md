@@ -1,7 +1,7 @@
 <br />
 <div align="center">
 
-<h1 align="center">Tapes V2</h1>
+<h1 align="center">Tapes</h1>
 
 <img src="media/icon.svg" alt="Tapes logo" width="200">
 
@@ -10,9 +10,9 @@ Swap your whole setup in one command and get it back in one command.
 
 Rewritten to be safer, simpler and truly atomic
 
-<a href="https://github.com/futurekismo-oss/tapes-v2/issues/new">Report Bug</a>
+<a href="https://github.com/futurekismo-oss/tapes/issues/new">Report Bug</a>
 &middot;
-<a href="https://github.com/futurekismo-oss/tapes-v2/issues/new">Request Feature</a>
+<a href="https://github.com/futurekismo-oss/tapes/issues/new">Request Feature</a>
 &middot;
 <a href="https://discord.gg/TVjsGzFAur">Join the Discord</a>
 
@@ -20,7 +20,7 @@ Rewritten to be safer, simpler and truly atomic
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust Edition: 2024](https://img.shields.io/badge/Rust-2024-orange.svg)](Cargo.toml)
-[![Release](https://img.shields.io/github/v/release/futurekismo-oss/tapes-v2?color=brightgreen)](https://github.com/futurekismo-oss/tapes-v2/releases)
+[![Release](https://img.shields.io/github/v/release/futurekismo-oss/tapes?color=brightgreen)](https://github.com/futurekismo-oss/tapes/releases)
 
 ---
 
@@ -36,23 +36,23 @@ Either package a `~/.config` as a tape (put in it a folder, move to `~/.tapes` a
 
 ```bash
 # You found a cyberpunk dotfiles in a public repo
-tapes-v2 install https://github.com/some_user/cyberpunk --name cyberpunk 
+tapes install https://github.com/some_user/cyberpunk --name cyberpunk 
 # if its in a specific branch or subdir in the repo, utilize the --branch and --dir subcommands
 
 # Insert a tape sitting in ~/.tapes
-tapes-v2 insert cyberpunk # tapes expects the tape in ~/.tapes/cyberpunk
+tapes insert cyberpunk # tapes expects the tape in ~/.tapes/cyberpunk
 
 # Wanna see its properties and hooks before insertion?
-tapes-v2 show cyberpunk
+tapes show cyberpunk
 
 # List all the tapes in ~/tapes
-tapes-v2 show
+tapes show
 
 # Is a tape currently inserted?
-tapes-v2 status
+tapes status
 
 # Wanna go back to your old config?
-tapes-v2 eject
+tapes eject
 ```
 
 It's as simple as that!
@@ -116,39 +116,39 @@ Some handy flags for tapes:
 **Install script** (grabs the latest release, re-run it to update)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/futurekismo-oss/tapes-v2/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/futurekismo-oss/tapes/main/install.sh | bash
 ```
-Run `tapes-v2 --version` to ensure it worked. Make sure to add `~/.local/bin` to your `$PATH`.
+Run `tapes --version` to ensure it worked. Make sure to add `~/.local/bin` to your `$PATH`.
 
 **Cargo**
 
 ```bash
-cargo install tapes-v2@v0.1.5-beta
-cargo binstall tapes-v2@v0.1.5-beta # prebuilt binary instead of compiling
+cargo install tapes@v0.1.5-beta
+cargo binstall tapes@v0.1.5-beta # prebuilt binary instead of compiling
 ```
 
-Try to add `~/.cargo/bin` to your `$PATH` if `tapes-v2 --version` doesn't work
+Try to add `~/.cargo/bin` to your `$PATH` if `tapes --version` doesn't work
 
 **Nix**
 
 ```bash
-nix run github:futurekismo-oss/tapes-v2
-nix profile install github:futurekismo-oss/tapes-v2
+nix run github:futurekismo-oss/tapes
+nix profile install github:futurekismo-oss/tapes
 ```
 
 **From source**
 
 ```bash
-git clone https://github.com/futurekismo-oss/tapes-v2
-cd tapes-v2
+git clone https://github.com/futurekismo-oss/tapes
+cd tapes
 cargo install --path .
 ```
 
 ---
 
-Tapes supports tab completion. Just add ``source <(COMPLETIONS=zsh tapes-v2)`` to your shell init (`.zshrc`, or `.bashrc`). Replace `zsh` with your chosen shell. It supports `zsh`, `fish`, `bash`, `elvish` and `nushell`
+Tapes supports tab completion. Just add ``source <(COMPLETIONS=zsh tapes)`` to your shell init (`.zshrc`, or `.bashrc`). Replace `zsh` with your chosen shell. It supports `zsh`, `fish`, `bash`, `elvish` and `nushell`
 
-> **Tip**: If you find the name `tapes-v2` annoying you can alias it to `tapes`, the binary can't be renamed tapes as it's taken on [crates.io](https://crates.io/search?q=tapes)
+> **Tip**: If you find the name `tapes` annoying you can alias it to `tapes`, the binary can't be renamed tapes as it's taken on [crates.io](https://crates.io/search?q=tapes)
 
 
 ## Why Use Tapes?
@@ -174,7 +174,7 @@ Thanks to these wonderful individuals for
 
 > [erotic-erox](https://github.com/exotic-erox) for calling out some lifecycle bugs on version 0.1.2-beta
 
-> [LilaccFlowerr](https://github.com/LilaccFlowerr) for providing the tapes-v2 showcase video and hopefully a gui in the future
+> [LilaccFlowerr](https://github.com/LilaccFlowerr) for providing the tapes showcase video and hopefully a gui in the future
 
 > [saksham_kumar](https://github.com/saksham_kumar) for being a contributor and writing the beloved install command
 
