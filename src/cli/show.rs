@@ -35,7 +35,12 @@ pub fn run(name: Option<String>) -> Result<(), anyhow::Error> {
 
 pub fn display_tape_info(tape: TapeManifest, tapes_path: &Path) {
     println!("Name: {}", tape.tape.name);
-    println!("Description: {}", tape.tape.desc);
+
+    // Tapes description should not be required
+    if let Some(description) = &tape.tape.desc {
+        println!("Description: {}", description);
+    }
+
     println!("Path: {}", tapes_path.to_string_lossy());
 
     if let Some(hooks) = &tape.hooks {
