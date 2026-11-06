@@ -62,11 +62,7 @@ pub fn eject_tapes(
 ) -> Result<(), anyhow::Error> {
     // manifest and tape path should be retrieved before app data is cleared by app.eject()
     let tape_path = app.path.clone();
-    let manifest = if let Some(ref tapes_path) = tape_path {
-        load_manifest(tapes_path).ok()
-    } else {
-        None
-    };
+    let manifest = tape_path.as_deref().and_then(|p| load_manifest(p).ok());
 
     app.eject()?;
     info!("cleared AppState");
@@ -79,14 +75,14 @@ pub fn eject_tapes(
     }
 
     // Now it will only remove the dir after ensuring .tapes owns it
-    if tapes_config_dir.join(MARKER_FILE_NAME).exists() {
-        fs::remove_dir_all(tapes_config_dir)
-            .context("failed to remove .config.tapes, you can remove it manually")?;
-    } else {
+    if !tapes_config_dir.join(MARKER_FILE_NAME).exists() {
         bail!(
             "{tapes_config_dir:?} was not removed, as tapes does not manage it ({MARKER_FILE_NAME} not found)"
-        )
+        );
     }
+
+    fs::remove_dir_all(tapes_config_dir)
+        .context("failed to remove .config.tapes, you can remove it manually")?;
 
     info!("removed {tapes_config_dir:?}");
 

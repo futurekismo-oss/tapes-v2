@@ -24,54 +24,9 @@ pub struct InstallOptions {
 pub fn run(opts: InstallOptions) -> Result<(), anyhow::Error> {
     let source_trimmed = opts.source.trim();
     let source_path = expand_tilde(source_trimmed);
-
-    let is_explicit_local = !source_trimmed.contains("://")
-        && !source_trimmed.starts_with("git@")
-        && (source_trimmed.starts_with('.')
-            || source_trimmed.starts_with('/')
-            || source_trimmed.starts_with('~'));
-
-    let is_local_dir = if is_explicit_local {
-        if !source_path.exists() {
-            bail!(
-                "Local source path does not exist: {}",
-                source_path.display()
-            );
-        }
-        if !source_path.is_dir() {
-            bail!(
-                "Local source path is not a directory: {}",
-                source_path.display()
-            );
-        }
-        true
-    } else {
-        source_path.is_dir()
-    };
-
-    let tape_name = if let Some(n) = opts.name {
-        n.trim().to_lowercase()
-    } else if is_local_dir {
-        source_path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("tape")
-            .to_lowercase()
-    } else {
-        source_trimmed
-            .trim_end_matches('/')
-            .trim_end_matches(".git")
-            .rsplit('/')
-            .next()
-            .unwrap_or("tape")
-            .to_lowercase()
-    };
-
-    let tape_name = if tape_name.is_empty() {
-        "tape".to_string()
-    } else {
-        tape_name
-    };
+    let is_explicit = is_explicit_local_path(source_trimmed);
+    let is_local_dir = is_local_source(&source_path, is_explicit)?;
+    let tape_name = resolve_tape_name(opts.name.as_deref(), source_trimmed, &source_path, is_local_dir);
 
     info!("Resolved tape name: {tape_name}");
 
@@ -80,122 +35,20 @@ pub fn run(opts: InstallOptions) -> Result<(), anyhow::Error> {
 
     info!("tapes_dir: {:?}, target_dir: {:?}", tapes_dir, target_dir);
 
-    if target_dir.exists() {
-        if !opts.force {
-            bail!(
-                "Tape '{tape_name}' already exists at {}.\nUse --force to overwrite.",
-                target_dir.display()
-            );
-        }
-
-        // Prevent destructive overwrite if this tape is currently active
-        if let Ok(app) = AppState::load_current()
-            && app.active_tape.as_deref() == Some(&tape_name)
-        {
-            bail!(
-                "Tape '{tape_name}' is currently inserted. Please eject it before reinstalling: 'tapes eject'"
-            );
-        }
-
-        if !opts.quiet {
-            println!("Removing existing tape at {}...", target_dir.display());
-        }
-        fs::remove_dir_all(&target_dir).with_context(|| {
-            format!("Failed to remove existing tape at {}", target_dir.display())
-        })?;
-    }
-
+    prepare_target_dir(&target_dir, &tape_name, opts.force, opts.quiet)?;
     fs::create_dir_all(&tapes_dir)?;
 
-    let temp_clone_dir = if opts.dir.is_some() {
-        Some(tapes_dir.join(format!(
-            ".tmp-{}",
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_nanos()
-        )))
-    } else {
-        None
-    };
+    install_source(
+        &opts,
+        source_trimmed,
+        &source_path,
+        is_local_dir,
+        &target_dir,
+        &tapes_dir,
+        &tape_name,
+    )?;
 
-    if is_local_dir {
-        if !opts.quiet {
-            println!(
-                "Copying local tape '{tape_name}' from {}...",
-                source_path.display()
-            );
-        }
-
-        let src_to_copy = resolve_subdir(&source_path, opts.dir.as_deref())?;
-        copy_dir(&src_to_copy, &target_dir)?;
-    } else {
-        if !opts.quiet {
-            println!("Cloning tape '{tape_name}' from {source_trimmed}...");
-        }
-
-        let url = normalize_git_url(source_trimmed);
-        let mut cmd = Command::new("git");
-        cmd.arg("clone");
-
-        if !opts.full_clone {
-            cmd.arg("--depth").arg("1");
-        }
-
-        if let Some(ref b) = opts.branch {
-            cmd.arg("--branch").arg(b);
-        }
-
-        let clone_destination = temp_clone_dir.as_deref().unwrap_or(&target_dir);
-        cmd.arg(&url).arg(clone_destination);
-
-        info!("git command: {:?}", cmd);
-
-        let status = cmd.status().context("Failed to execute git clone")?;
-
-        if !status.success() {
-            if let Some(ref tmp) = temp_clone_dir {
-                let _ = fs::remove_dir_all(tmp);
-            }
-            let _ = fs::remove_dir_all(&target_dir);
-            bail!("git clone failed with status: {status}");
-        }
-
-        if let Some(ref tmp) = temp_clone_dir {
-            let copy_res = resolve_subdir(tmp, opts.dir.as_deref())
-                .and_then(|sub| copy_dir(&sub, &target_dir));
-            let _ = fs::remove_dir_all(tmp);
-            copy_res?;
-        }
-    }
-
-    let manifest_path = target_dir.join("tape.toml");
-    if !manifest_path.exists() {
-        let example_toml = format!(
-            r#"[tape]
-name = "{tape_name}"
-desc = "Tape installed from {source_trimmed}"
-
-# [hooks]
-# insert = [
-#     # "hyprctl reload",
-#     # "pkill waybar",
-#     # "qs -c {tape_name} -d" # -d runs in daemon mode
-# ]
-# eject = [
-#     # "hyprctl reload",
-#     # "qs kill", 
-#     # "waybar &"
-# ]
-# install = [
-#     # "./setup.sh"
-# ]
-"#
-        );
-
-        fs::write(&manifest_path, example_toml)?;
-    }
-
+    ensure_manifest(&target_dir, &tape_name, source_trimmed)?;
     record_installation(&tape_name, source_trimmed);
 
     let manifest = crate::util::load_manifest(&target_dir)?;
@@ -225,12 +78,201 @@ desc = "Tape installed from {source_trimmed}"
     Ok(())
 }
 
-fn expand_tilde(path_str: &str) -> PathBuf {
-    if let Some(rest) = path_str.strip_prefix("~/") {
-        if let Some(home) = dirs::home_dir() {
-            return home.join(rest);
+fn is_explicit_local_path(source: &str) -> bool {
+    !source.contains("://")
+        && !source.starts_with("git@")
+        && (source.starts_with('.') || source.starts_with('/') || source.starts_with('~'))
+}
+
+fn is_local_source(path: &Path, is_explicit: bool) -> Result<bool, anyhow::Error> {
+    if !is_explicit {
+        return Ok(path.is_dir());
+    }
+    if !path.exists() {
+        bail!("Local source path does not exist: {}", path.display());
+    }
+    if !path.is_dir() {
+        bail!("Local source path is not a directory: {}", path.display());
+    }
+    Ok(true)
+}
+
+fn resolve_tape_name(
+    name: Option<&str>,
+    source: &str,
+    source_path: &Path,
+    is_local_dir: bool,
+) -> String {
+    let chosen = match name {
+        Some(n) if !n.trim().is_empty() => n.trim().to_lowercase(),
+        _ if is_local_dir => source_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("tape")
+            .to_lowercase(),
+        _ => source
+            .trim_end_matches('/')
+            .trim_end_matches(".git")
+            .rsplit('/')
+            .next()
+            .unwrap_or("tape")
+            .to_lowercase(),
+    };
+
+    if chosen.is_empty() {
+        "tape".to_string()
+    } else {
+        chosen
+    }
+}
+
+fn prepare_target_dir(
+    target_dir: &Path,
+    tape_name: &str,
+    force: bool,
+    quiet: bool,
+) -> Result<(), anyhow::Error> {
+    if !target_dir.exists() {
+        return Ok(());
+    }
+
+    if !force {
+        bail!(
+            "Tape '{tape_name}' already exists at {}.\nUse --force to overwrite.",
+            target_dir.display()
+        );
+    }
+
+    // Prevent destructive overwrite if this tape is currently active
+    if let Ok(app) = AppState::load_current()
+        && app.active_tape.as_deref() == Some(tape_name)
+    {
+        bail!(
+            "Tape '{tape_name}' is currently inserted. Please eject it before reinstalling: 'tapes eject'"
+        );
+    }
+
+    if !quiet {
+        println!("Removing existing tape at {}...", target_dir.display());
+    }
+    fs::remove_dir_all(target_dir).with_context(|| {
+        format!("Failed to remove existing tape at {}", target_dir.display())
+    })
+}
+
+fn install_source(
+    opts: &InstallOptions,
+    source_trimmed: &str,
+    source_path: &Path,
+    is_local_dir: bool,
+    target_dir: &Path,
+    tapes_dir: &Path,
+    tape_name: &str,
+) -> Result<(), anyhow::Error> {
+    if is_local_dir {
+        if !opts.quiet {
+            println!(
+                "Copying local tape '{tape_name}' from {}...",
+                source_path.display()
+            );
         }
-    } else if path_str == "~"
+        let src_to_copy = resolve_subdir(source_path, opts.dir.as_deref())?;
+        return copy_dir(&src_to_copy, target_dir);
+    }
+
+    if !opts.quiet {
+        println!("Cloning tape '{tape_name}' from {source_trimmed}...");
+    }
+
+    let temp_clone_dir = opts.dir.as_ref().map(|_| {
+        tapes_dir.join(format!(
+            ".tmp-{}",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        ))
+    });
+
+    let url = normalize_git_url(source_trimmed);
+    let mut cmd = Command::new("git");
+    cmd.arg("clone");
+
+    if !opts.full_clone {
+        cmd.arg("--depth").arg("1");
+    }
+
+    if let Some(ref b) = opts.branch {
+        cmd.arg("--branch").arg(b);
+    }
+
+    let clone_dest = temp_clone_dir.as_deref().unwrap_or(target_dir);
+    cmd.arg(&url).arg(clone_dest);
+
+    info!("git command: {:?}", cmd);
+    let status = cmd.status().context("Failed to execute git clone")?;
+
+    if !status.success() {
+        if let Some(ref tmp) = temp_clone_dir {
+            let _ = fs::remove_dir_all(tmp);
+        }
+        let _ = fs::remove_dir_all(target_dir);
+        bail!("git clone failed with status: {status}");
+    }
+
+    if let Some(ref tmp) = temp_clone_dir {
+        let copy_res = resolve_subdir(tmp, opts.dir.as_deref())
+            .and_then(|sub| copy_dir(&sub, target_dir));
+        let _ = fs::remove_dir_all(tmp);
+        copy_res?;
+    }
+
+    Ok(())
+}
+
+fn ensure_manifest(
+    target_dir: &Path,
+    tape_name: &str,
+    source_trimmed: &str,
+) -> Result<(), anyhow::Error> {
+    let manifest_path = target_dir.join("tape.toml");
+    if manifest_path.exists() {
+        return Ok(());
+    }
+
+    let example_toml = format!(
+        r#"[tape]
+name = "{tape_name}"
+desc = "Tape installed from {source_trimmed}"
+
+# [hooks]
+# insert = [
+#     # "hyprctl reload",
+#     # "pkill waybar",
+#     # "qs -c {tape_name} -d" # -d runs in daemon mode
+# ]
+# eject = [
+#     # "hyprctl reload",
+#     # "qs kill", 
+#     # "waybar &"
+# ]
+# install = [
+#     # "./setup.sh"
+# ]
+"#
+    );
+
+    fs::write(&manifest_path, example_toml)?;
+    Ok(())
+}
+
+fn expand_tilde(path_str: &str) -> PathBuf {
+    if let Some(rest) = path_str.strip_prefix("~/")
+        && let Some(home) = dirs::home_dir()
+    {
+        return home.join(rest);
+    }
+    if path_str == "~"
         && let Some(home) = dirs::home_dir()
     {
         return home;
@@ -239,15 +281,14 @@ fn expand_tilde(path_str: &str) -> PathBuf {
 }
 
 fn resolve_subdir(base: &Path, dir: Option<&str>) -> Result<PathBuf, anyhow::Error> {
-    if let Some(d) = dir {
-        let sub = base.join(d.trim_start_matches('/'));
-        if !sub.exists() {
-            bail!("Directory '{d}' does not exist in {}", base.display());
-        }
-        Ok(sub)
-    } else {
-        Ok(base.to_path_buf())
+    let Some(d) = dir else {
+        return Ok(base.to_path_buf());
+    };
+    let sub = base.join(d.trim_start_matches('/'));
+    if !sub.exists() {
+        bail!("Directory '{d}' does not exist in {}", base.display());
     }
+    Ok(sub)
 }
 
 fn normalize_git_url(source: &str) -> String {

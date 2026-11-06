@@ -1,6 +1,6 @@
 use anyhow::{Result, anyhow, bail};
 use log::warn;
-use std::{env, path::Path, process::Command, sync::LazyLock};
+use std::{env, io::IsTerminal, path::Path, process::Command, sync::LazyLock};
 
 use crate::{toml::TapeManifest, util::yes_or_no_prompt};
 
@@ -86,15 +86,8 @@ fn run_lifecycle_hooks(
     quiet: bool,
     stage: &str,
 ) -> Result<(), anyhow::Error> {
-    if no_hooks {
-        return Ok(());
-    }
-
-    let Some(hooks) = hooks else {
-        return Ok(());
-    };
-
-    if hooks.is_empty() {
+    let hooks = hooks.unwrap_or_default();
+    if no_hooks || hooks.is_empty() {
         return Ok(());
     }
 
@@ -150,40 +143,18 @@ pub fn run_install_hooks(
     yes: bool,
     quiet: bool,
 ) -> Result<(), anyhow::Error> {
-    if no_hooks {
+    let hooks = manifest
+        .hooks
+        .as_ref()
+        .map(|h| h.install.as_slice())
+        .unwrap_or_default();
+
+    if no_hooks || hooks.is_empty() {
         return Ok(());
     }
 
-    let Some(ref hooks) = manifest.hooks else {
+    if !yes && !confirm_install_hooks(&manifest.tape.name, hooks, quiet) {
         return Ok(());
-    };
-
-    if hooks.install.is_empty() {
-        return Ok(());
-    }
-
-    if !yes {
-        use std::io::IsTerminal;
-        if !std::io::stdin().is_terminal() {
-            if !quiet {
-                println!("Non-interactive terminal detected, skipping install hooks.");
-            }
-            return Ok(());
-        }
-
-        println!(
-            "\nTape '{}' defines the following install hook(s):",
-            manifest.tape.name
-        );
-        for hook in &hooks.install {
-            println!("  - '{hook}'");
-        }
-        if !yes_or_no_prompt("Do you want to run these install hooks?") {
-            if !quiet {
-                println!("Skipping install hooks.");
-            }
-            return Ok(());
-        }
     }
 
     if !quiet {
@@ -191,5 +162,26 @@ pub fn run_install_hooks(
     }
 
     let envs = hook_env_vars(&manifest.tape.name, Some(target_dir));
-    run_hooks(&hooks.install, Some(target_dir), &envs, quiet)
+    run_hooks(hooks, Some(target_dir), &envs, quiet)
+}
+
+fn confirm_install_hooks(tape_name: &str, hooks: &[String], quiet: bool) -> bool {
+    if !std::io::stdin().is_terminal() {
+        if !quiet {
+            println!("Non-interactive terminal detected, skipping install hooks.");
+        }
+        return false;
+    }
+
+    println!("\nTape '{tape_name}' defines the following install hook(s):");
+    for hook in hooks {
+        println!("  - '{hook}'");
+    }
+
+    let confirmed = yes_or_no_prompt("Do you want to run these install hooks?");
+    if !confirmed && !quiet {
+        println!("Skipping install hooks.");
+    }
+
+    confirmed
 }
