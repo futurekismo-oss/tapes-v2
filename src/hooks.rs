@@ -115,14 +115,28 @@ fn hook_env_vars(tape_name: &str, tape_dir: Option<&Path>) -> Vec<(&'static str,
 }
 
 pub fn run_eject_hooks(
-    manifest: &TapeManifest,
+    manifest: Option<&TapeManifest>,
+    tape_name: &str,
     tape_path: Option<&Path>,
     no_hooks: bool,
     quiet: bool,
 ) -> Result<(), anyhow::Error> {
-    let hooks = manifest.hooks.as_ref().map(|h| h.eject.as_slice());
-    let envs = hook_env_vars(&manifest.tape.name, tape_path);
-    run_lifecycle_hooks(hooks, tape_path, &envs, no_hooks, quiet, "Eject")
+    let envs = hook_env_vars(tape_name, tape_path);
+
+    let tape_hooks = manifest
+        .and_then(|m| m.hooks.as_ref())
+        .map(|h| h.eject.as_slice());
+    run_lifecycle_hooks(tape_hooks, tape_path, &envs, no_hooks, quiet, "Eject")?;
+
+    let global_hooks = &crate::config::Config::get().hooks.global.post_eject;
+    run_lifecycle_hooks(
+        Some(global_hooks),
+        None,
+        &envs,
+        no_hooks,
+        quiet,
+        "global post-eject",
+    )
 }
 
 pub fn run_insert_hooks(
@@ -131,9 +145,27 @@ pub fn run_insert_hooks(
     no_hooks: bool,
     quiet: bool,
 ) -> Result<(), anyhow::Error> {
-    let hooks = manifest.hooks.as_ref().map(|h| h.insert.as_slice());
     let envs = hook_env_vars(&manifest.tape.name, Some(tape_path));
-    run_lifecycle_hooks(hooks, Some(tape_path), &envs, no_hooks, quiet, "Insert")
+
+    let tape_hooks = manifest.hooks.as_ref().map(|h| h.insert.as_slice());
+    run_lifecycle_hooks(
+        tape_hooks,
+        Some(tape_path),
+        &envs,
+        no_hooks,
+        quiet,
+        "Insert",
+    )?;
+
+    let global_hooks = &crate::config::Config::get().hooks.global.post_insert;
+    run_lifecycle_hooks(
+        Some(global_hooks),
+        Some(tape_path),
+        &envs,
+        no_hooks,
+        quiet,
+        "global post-insert",
+    )
 }
 
 pub fn run_install_hooks(

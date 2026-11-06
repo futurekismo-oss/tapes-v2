@@ -1,4 +1,5 @@
 mod cli;
+pub mod config;
 pub mod hooks;
 pub mod logger;
 pub mod state;
@@ -10,7 +11,7 @@ use clap_complete::CompleteEnv;
 use cli::structs::Cli;
 use log::info;
 
-use cli::{eject, insert, install, show, status, structs::Commands};
+use cli::{config as cli_config, eject, insert, install, show, status, structs::Commands};
 use state::AppState;
 
 use crate::{cli::completions, util::get_tapes_data_path};
@@ -62,6 +63,9 @@ fn main() -> Result<(), anyhow::Error> {
                 full_clone,
                 quiet: cli.quiet,
             })?;
+        }
+        Commands::Config { action } => {
+            cli_config::run(action)?;
         }
     }
 

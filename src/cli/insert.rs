@@ -5,11 +5,11 @@ use crate::{
     toml::TapeManifest,
     util::{
         MARKER_FILE_NAME, atomic_swap, find_targets, get_staging_config_path, get_tapes_data,
-        get_tapes_default_path, load_manifest, save_state_data, yes_or_no_prompt,
+        get_tapes_default_path, get_user_config_dir, load_manifest, save_state_data,
+        yes_or_no_prompt,
     },
 };
 use anyhow::bail;
-use dirs::config_dir;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -31,11 +31,15 @@ pub fn run(
 ) -> Result<(), anyhow::Error> {
     info!("starting insert command");
 
-    let config_dir = config_dir().expect("config dir should exist");
+    let config_dir = get_user_config_dir()?;
     let new_config_dir = get_staging_config_path()?;
 
+    // Fall back to default_tape from config if no name or path is provided
+    let default_tape = crate::config::Config::get().default_tape.clone();
+    let effective_name = name.or(default_tape);
+
     // check tape exists first before doing anything or asking to eject
-    let (tape_path, manifest) = resolve_tape(name.as_ref(), path)?;
+    let (tape_path, manifest) = resolve_tape(effective_name.as_ref(), path)?;
     let tape_name = manifest.tape.name.clone();
 
     // another tape in? ask user to eject it
@@ -173,7 +177,7 @@ fn resolve_targets(
     app: &AppState,
     new_config_dir: &Path,
 ) -> Result<HashMap<String, Target>, anyhow::Error> {
-    let config_dir = config_dir().expect("Config dir should exist");
+    let config_dir = get_user_config_dir()?;
     let mut targets = HashMap::with_capacity(64);
 
     let mut add_targets = |dir: &Path, from_tapes: bool| -> Result<(), anyhow::Error> {
@@ -199,10 +203,9 @@ fn map_target(target_path: PathBuf, new_config_dir: &Path, from_tapes: bool) -> 
     let target_name = file_name.to_string_lossy().into_owned();
     let symlink_dest = new_config_dir.join(&file_name);
 
-    let resolved_path = if from_tapes {
-        target_path
-    } else {
-        symlink_dest.clone()
+    let resolved_path = match from_tapes {
+        true => target_path,
+        false => symlink_dest.clone(),
     };
 
     let target = Target {

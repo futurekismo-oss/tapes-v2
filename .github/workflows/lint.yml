@@ -1,0 +1,47 @@
+name: Lint & Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: Lint & Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold clang sccache
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Cargo Check
+        run: cargo check --verbose
+
+      - name: Cargo Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Check Formatting
+        run: cargo fmt --check
+
+      - name: Cargo Test
+        run: cargo test --verbose
