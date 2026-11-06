@@ -114,10 +114,10 @@ fn setup_file_logger(log_file_path: Option<&Path>) {
         return;
     };
 
-    if let Ok(metadata) = fs::metadata(path) {
-        if metadata.len() >= MAX_LOG_SIZE {
-            rotate_log_files(path);
-        }
+    if let Ok(metadata) = fs::metadata(path)
+        && metadata.len() >= MAX_LOG_SIZE
+    {
+        rotate_log_files(path);
     }
 
     let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) else {

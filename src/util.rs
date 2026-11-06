@@ -149,18 +149,20 @@ pub fn yes_or_no_prompt(message: &str) -> bool {
     use std::io::Write;
 
     print!("{} (y/n): ", message);
-    std::io::stdout().flush().unwrap();
+    let _ = std::io::stdout().flush();
 
     let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
+    if std::io::stdin().read_line(&mut input).is_err() {
+        return false;
+    }
 
-    input.trim().to_lowercase() == "y"
+    input.trim().eq_ignore_ascii_case("y")
 }
 
 pub fn get_all_tapes_in_dir(tapes_path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
     let mut found_tapes: Vec<PathBuf> = Vec::new();
 
-    if let Ok(entries) = fs::read_dir(&tapes_path) {
+    if let Ok(entries) = fs::read_dir(tapes_path) {
         for entry in entries {
             let entry = entry?;
             let path = entry.path();

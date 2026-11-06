@@ -60,8 +60,9 @@ pub fn eject_tapes(
     quiet: bool,
     no_hooks: bool,
 ) -> Result<(), anyhow::Error> {
-    // manifest should be retrieved before app data is cleared by app.eject()
-    let manifest = if let Some(ref tapes_path) = app.path {
+    // manifest and tape path should be retrieved before app data is cleared by app.eject()
+    let tape_path = app.path.clone();
+    let manifest = if let Some(ref tapes_path) = tape_path {
         load_manifest(tapes_path).ok()
     } else {
         None
@@ -96,8 +97,8 @@ pub fn eject_tapes(
     info!("running eject hooks now");
     info!("manifest: {:#?}", manifest);
 
-    if let Some(m) = manifest {
-        run_eject_hooks(m, no_hooks, quiet)?;
+    if let Some(ref m) = manifest {
+        run_eject_hooks(m, tape_path.as_deref(), no_hooks, quiet)?;
     } else if !quiet {
         info!("Skipping eject hooks: tape manifest could not be loaded");
     }

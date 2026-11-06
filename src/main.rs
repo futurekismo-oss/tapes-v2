@@ -47,8 +47,21 @@ fn main() -> Result<(), anyhow::Error> {
             branch,
             dir,
             no_hooks,
+            yes,
+            force,
+            full_clone,
         } => {
-            install::run(&source, name, branch, dir, no_hooks)?;
+            install::run(install::InstallOptions {
+                source,
+                name,
+                branch,
+                dir,
+                no_hooks,
+                yes,
+                force,
+                full_clone,
+                quiet: cli.quiet,
+            })?;
         }
     }
 

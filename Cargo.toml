@@ -30,7 +30,7 @@ dirs = "7.0.0"
 log = "0.4.35"
 nix = { version = "0.31.3", default-features = false, features = ["fs"] }
 serde = { version = "1.0.229", features = ["derive"] }
-toml = "1.1.8"
+toml = "1.2.0"
 
 [profile.dev]
 debug = 1

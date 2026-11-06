@@ -7,42 +7,73 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::{hooks, util::get_tapes_default_path};
+use crate::{AppState, hooks, util::get_tapes_default_path};
 
-pub fn run(
-    source: &str,
-    name: Option<String>,
-    branch: Option<String>,
-    dir: Option<String>,
-    no_hooks: bool,
-) -> Result<(), anyhow::Error> {
-    let source_path = PathBuf::from(source);
+pub struct InstallOptions {
+    pub source: String,
+    pub name: Option<String>,
+    pub branch: Option<String>,
+    pub dir: Option<String>,
+    pub no_hooks: bool,
+    pub yes: bool,
+    pub force: bool,
+    pub full_clone: bool,
+    pub quiet: bool,
+}
 
-    let is_path = source_path.exists();
-    info!("source_path: {source_path:?}");
+pub fn run(opts: InstallOptions) -> Result<(), anyhow::Error> {
+    let source_trimmed = opts.source.trim();
+    let source_path = expand_tilde(source_trimmed);
 
-    let tape_name = if let Some(n) = name {
-        n.trim().to_string()
-    } else if is_path {
+    let is_explicit_local = !source_trimmed.contains("://")
+        && !source_trimmed.starts_with("git@")
+        && (source_trimmed.starts_with('.')
+            || source_trimmed.starts_with('/')
+            || source_trimmed.starts_with('~'));
+
+    let is_local_dir = if is_explicit_local {
+        if !source_path.exists() {
+            bail!(
+                "Local source path does not exist: {}",
+                source_path.display()
+            );
+        }
+        if !source_path.is_dir() {
+            bail!(
+                "Local source path is not a directory: {}",
+                source_path.display()
+            );
+        }
+        true
+    } else {
+        source_path.is_dir()
+    };
+
+    let tape_name = if let Some(n) = opts.name {
+        n.trim().to_lowercase()
+    } else if is_local_dir {
         source_path
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("tape")
-            .to_string()
-    // Get it from the repo if a path, dir or name is not provided
+            .to_lowercase()
     } else {
-        source
+        source_trimmed
             .trim_end_matches('/')
             .trim_end_matches(".git")
             .rsplit('/')
             .next()
             .unwrap_or("tape")
-            .to_string()
+            .to_lowercase()
     };
 
-    let tape_name = tape_name.to_lowercase(); // Make the dir name lowercase, no matter what
+    let tape_name = if tape_name.is_empty() {
+        "tape".to_string()
+    } else {
+        tape_name
+    };
 
-    info!("tape name: {tape_name}");
+    info!("Resolved tape name: {tape_name}");
 
     let tapes_dir = get_tapes_default_path()?;
     let target_dir = tapes_dir.join(&tape_name);
@@ -50,193 +81,259 @@ pub fn run(
     info!("tapes_dir: {:?}, target_dir: {:?}", tapes_dir, target_dir);
 
     if target_dir.exists() {
-        error!(
-            "Tape {} already exists at {}",
-            tape_name,
-            target_dir.display()
-        );
-        bail!(
-            "Tape {} already exists at {}",
-            tape_name,
-            target_dir.display()
-        );
+        if !opts.force {
+            bail!(
+                "Tape '{tape_name}' already exists at {}.\nUse --force to overwrite.",
+                target_dir.display()
+            );
+        }
+
+        // Prevent destructive overwrite if this tape is currently active
+        if let Ok(app) = AppState::load_current()
+            && app.active_tape.as_deref() == Some(&tape_name)
+        {
+            bail!(
+                "Tape '{tape_name}' is currently inserted. Please eject it before reinstalling: 'tapes eject'"
+            );
+        }
+
+        if !opts.quiet {
+            println!("Removing existing tape at {}...", target_dir.display());
+        }
+        fs::remove_dir_all(&target_dir).with_context(|| {
+            format!("Failed to remove existing tape at {}", target_dir.display())
+        })?;
     }
 
-    // create *all* the dir cuz first time users wont have the .tapes directory
     fs::create_dir_all(&tapes_dir)?;
 
-    // Temporary dir for cloning
-    let temp_clone_dir = tapes_dir.join(format!(
-        ".tmp-{}",
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
+    let temp_clone_dir = if opts.dir.is_some() {
+        Some(tapes_dir.join(format!(
+            ".tmp-{}",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        )))
+    } else {
+        None
+    };
 
-    info!("temp_clone_dir: {temp_clone_dir:?}");
+    if is_local_dir {
+        if !opts.quiet {
+            println!(
+                "Copying local tape '{tape_name}' from {}...",
+                source_path.display()
+            );
+        }
 
-    // copy or clone based on whether exists or not
-    if is_path {
-        println!("Copying local tape '{tape_name}' from {source_path:?}...",);
-
-        // If a specific dir provided locally, resolve it
-        let src_to_copy = if let Some(ref d) = dir {
-            let sub = source_path.join(d);
-            if !sub.exists() {
-                bail!("Directory '{}' does not exist in source path", d);
-            }
-            sub
-        } else {
-            source_path
-        };
+        let src_to_copy = resolve_subdir(&source_path, opts.dir.as_deref())?;
         copy_dir(&src_to_copy, &target_dir)?;
     } else {
-        // print cloning
-        println!("Copying tape '{tape_name}' from {source}");
+        if !opts.quiet {
+            println!("Cloning tape '{tape_name}' from {source_trimmed}...");
+        }
 
-        // prepare the git command
-        let url = normalize_git_url(source);
+        let url = normalize_git_url(source_trimmed);
         let mut cmd = Command::new("git");
         cmd.arg("clone");
 
-        // add the branch tag
-        if let Some(b) = branch {
+        if !opts.full_clone {
+            cmd.arg("--depth").arg("1");
+        }
+
+        if let Some(ref b) = opts.branch {
             cmd.arg("--branch").arg(b);
         }
 
-        let clone_destination = if dir.is_some() {
-            &temp_clone_dir
-        } else {
-            &target_dir
-        };
-
-        // add the repo url and the path
+        let clone_destination = temp_clone_dir.as_deref().unwrap_or(&target_dir);
         cmd.arg(&url).arg(clone_destination);
 
         info!("git command: {:?}", cmd);
 
-        let status = cmd.status().context("Failed to run git clone")?;
+        let status = cmd.status().context("Failed to execute git clone")?;
 
         if !status.success() {
-            // _ bcz anything happens we have to clean the half cloned git directory
-            let _ = fs::remove_dir_all(&temp_clone_dir);
+            if let Some(ref tmp) = temp_clone_dir {
+                let _ = fs::remove_dir_all(tmp);
+            }
             let _ = fs::remove_dir_all(&target_dir);
             bail!("git clone failed with status: {status}");
         }
 
-        if let Some(ref d) = dir {
-            let d = d.trim_start_matches('/');
-            let sub = temp_clone_dir.join(d);
-
-            info!("Requested subdir: {sub:?}");
-
-            if !sub.exists() {
-                let _ = fs::remove_dir_all(&temp_clone_dir);
-                bail!("Directory '{}' does not exist in the cloned repository", d);
-            }
-            copy_dir(&sub, &target_dir)?;
-            // Remove the full temporary repository clone, keeping only the extracted subdirectory
-            let _ = fs::remove_dir_all(&temp_clone_dir);
+        if let Some(ref tmp) = temp_clone_dir {
+            let copy_res = resolve_subdir(tmp, opts.dir.as_deref())
+                .and_then(|sub| copy_dir(&sub, &target_dir));
+            let _ = fs::remove_dir_all(tmp);
+            copy_res?;
         }
     }
 
-    // now making the manifest file..
     let manifest_path = target_dir.join("tape.toml");
-
     if !manifest_path.exists() {
         let example_toml = format!(
             r#"[tape]
 name = "{tape_name}"
-desc = "Tape installed from {source}"
+desc = "Tape installed from {source_trimmed}"
 
 # [hooks]
 # insert = [
 #     # "hyprctl reload",
 #     # "pkill waybar",
-#     # "qs -c {tape_name} -d" # -d in daemon mode cause hooks run in the current shell session not in the background
+#     # "qs -c {tape_name} -d" # -d runs in daemon mode
 # ]
 # eject = [
 #     # "hyprctl reload",
 #     # "qs kill", 
 #     # "waybar &"
 # ]
+# install = [
+#     # "./setup.sh"
+# ]
 "#
         );
 
-        fs::write(manifest_path, example_toml)?;
+        fs::write(&manifest_path, example_toml)?;
     }
 
-    if let Some(data) = dirs::data_dir() {
-        let tapes_data = data.join("tapes");
+    record_installation(&tape_name, source_trimmed);
 
-        // Ensure ~/.local/share/tapes exists
-        let _ = fs::create_dir_all(&tapes_data);
-
-        // Record format: simple name and source tracking
-        let record = format!("name={tape_name}, source={source}\n");
-
-        info!("record: {record}");
-
-        // Append entry to records.txt (create if not exists)
-        let _ = fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(tapes_data.join("install_records.txt"))
-            .and_then(|mut f| std::io::Write::write_all(&mut f, record.as_bytes()));
-    }
-
-    // Install hooks
     let manifest = crate::util::load_manifest(&target_dir)?;
-    hooks::run_install_hooks(manifest, no_hooks)?;
+    if let Err(err) =
+        hooks::run_install_hooks(&manifest, &target_dir, opts.no_hooks, opts.yes, opts.quiet)
+    {
+        error!("Install hook failed for tape '{tape_name}': {err}");
+        eprintln!("\nError: Install hook failed: {err}");
+        eprintln!(
+            "Tape files remain at '{}', but install hooks did not complete successfully.",
+            target_dir.display()
+        );
+        bail!("Install hooks failed for tape '{tape_name}'");
+    }
 
-    info!("ran install hooks");
-
-    // Success confirmation message
     info!(
         "Successfully installed tape '{tape_name}' to {}",
         target_dir.display()
     );
-    println!(
-        "Successfully installed tape '{tape_name}' to {}",
-        target_dir.display()
-    );
+    if !opts.quiet {
+        println!(
+            "Successfully installed tape '{tape_name}' to {}",
+            target_dir.display()
+        );
+    }
 
     Ok(())
 }
 
+fn expand_tilde(path_str: &str) -> PathBuf {
+    if let Some(rest) = path_str.strip_prefix("~/") {
+        if let Some(home) = dirs::home_dir() {
+            return home.join(rest);
+        }
+    } else if path_str == "~"
+        && let Some(home) = dirs::home_dir()
+    {
+        return home;
+    }
+    PathBuf::from(path_str)
+}
+
+fn resolve_subdir(base: &Path, dir: Option<&str>) -> Result<PathBuf, anyhow::Error> {
+    if let Some(d) = dir {
+        let sub = base.join(d.trim_start_matches('/'));
+        if !sub.exists() {
+            bail!("Directory '{d}' does not exist in {}", base.display());
+        }
+        Ok(sub)
+    } else {
+        Ok(base.to_path_buf())
+    }
+}
+
 fn normalize_git_url(source: &str) -> String {
-    if !source.contains("://") && !source.starts_with("git@") && source.contains('/') {
+    if source.contains("://") || source.starts_with("git@") {
+        return source.to_string();
+    }
+
+    // Support shorthands like gitlab:user/repo, gl:user/repo, gh:user/repo
+    if let Some(rest) = source
+        .strip_prefix("gitlab:")
+        .or_else(|| source.strip_prefix("gl:"))
+    {
+        return format!("https://gitlab.com/{}.git", rest.trim_end_matches(".git"));
+    }
+    if let Some(rest) = source
+        .strip_prefix("github:")
+        .or_else(|| source.strip_prefix("gh:"))
+    {
+        return format!("https://github.com/{}.git", rest.trim_end_matches(".git"));
+    }
+    if let Some(rest) = source
+        .strip_prefix("codeberg:")
+        .or_else(|| source.strip_prefix("cb:"))
+    {
+        return format!("https://codeberg.org/{}.git", rest.trim_end_matches(".git"));
+    }
+
+    for host in &["github.com", "gitlab.com", "codeberg.org"] {
+        if let Some(rest) = source.strip_prefix(&format!("{host}/")) {
+            return format!("https://{host}/{}.git", rest.trim_end_matches(".git"));
+        }
+    }
+
+    if source.contains('/') {
         format!("https://github.com/{}.git", source.trim_end_matches(".git"))
     } else {
         source.to_string()
     }
 }
 
-//  copy the files from the tree src to dst..
 fn copy_dir(source: &Path, destination: &Path) -> Result<(), anyhow::Error> {
     fs::create_dir_all(destination)?;
 
     for entry in fs::read_dir(source)? {
         let entry = entry?;
         let path = entry.path();
-
-        // ignore specified dir and files
-        if !path.exists() {
-            continue;
-        }
-
         let target = destination.join(entry.file_name());
 
-        info!("copying {path:?} -> {target:?}");
+        let file_type = entry.file_type()?;
 
-        // recursive copy for all the subdirectories
-        if path.is_dir() {
+        if file_type.is_symlink() {
+            let link_target = fs::read_link(&path)?;
+            if target.symlink_metadata().is_ok() {
+                let _ = fs::remove_file(&target);
+            }
+            std::os::unix::fs::symlink(&link_target, &target)
+                .with_context(|| format!("Failed to create symlink at {}", target.display()))?;
+        } else if file_type.is_dir() {
             copy_dir(&path, &target)?;
         } else {
-            fs::copy(&path, &target)?;
+            fs::copy(&path, &target).with_context(|| {
+                format!("Failed to copy {} to {}", path.display(), target.display())
+            })?;
         }
     }
 
     Ok(())
+}
+
+fn record_installation(tape_name: &str, source: &str) {
+    if let Some(data) = dirs::data_dir() {
+        let tapes_data = data.join("tapes");
+        let _ = fs::create_dir_all(&tapes_data);
+        let records_path = tapes_data.join("install_records.txt");
+
+        let mut lines = Vec::new();
+        if let Ok(content) = fs::read_to_string(&records_path) {
+            for line in content.lines() {
+                if !line.starts_with(&format!("name={tape_name},")) {
+                    lines.push(line.to_string());
+                }
+            }
+        }
+        lines.push(format!("name={tape_name}, source={source}"));
+        let mut updated = lines.join("\n");
+        updated.push('\n');
+        let _ = fs::write(&records_path, updated);
+    }
 }
