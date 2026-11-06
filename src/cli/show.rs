@@ -13,21 +13,20 @@ pub fn run(name: Option<String>) -> Result<(), anyhow::Error> {
         let tapes = get_tapes_data(&name)?;
         let tapes_dir = tapes_path.join(name);
         display_tape_info(tapes, &tapes_dir);
-    } else {
-        println!("All Tapes (in ~/.tapes)");
+        return Ok(());
+    }
 
-        let tapes = get_all_tapes_in_dir(&tapes_path)?;
+    println!("All Tapes (in ~/.tapes)");
 
-        if tapes.is_empty() {
-            println!("No tapes installed yet");
+    let tapes = get_all_tapes_in_dir(&tapes_path)?;
+    if tapes.is_empty() {
+        println!("No tapes installed yet");
+        return Ok(());
+    }
 
-            return Ok(());
-        }
-
-        for tape in tapes {
-            if let Some(name) = tape.file_name().and_then(|n| n.to_str()) {
-                println!("- {name}: {}", tape.display());
-            }
+    for tape in tapes {
+        if let Some(name) = tape.file_name().and_then(|n| n.to_str()) {
+            println!("- {name}: {}", tape.display());
         }
     }
 
@@ -41,27 +40,9 @@ pub fn display_tape_info(tape: TapeManifest, tapes_path: &Path) {
 
     if let Some(hooks) = &tape.hooks {
         println!("Hooks");
-
-        if !hooks.install.is_empty() {
-            println!("  Install:");
-            for hook in &hooks.install {
-                println!("   - {}", hook);
-            }
-        }
-
-        if !hooks.insert.is_empty() {
-            println!("  Insert:");
-            for hook in &hooks.insert {
-                println!("   - {}", hook);
-            }
-        }
-
-        if !hooks.eject.is_empty() {
-            println!("  Eject:");
-            for hook in &hooks.eject {
-                println!("   - {}", hook);
-            }
-        }
+        print_hooks_section("Install", &hooks.install);
+        print_hooks_section("Insert", &hooks.insert);
+        print_hooks_section("Eject", &hooks.eject);
     }
 
     if let Ok(targets) = find_targets(tapes_path) {
@@ -73,6 +54,15 @@ pub fn display_tape_info(tape: TapeManifest, tapes_path: &Path) {
                 .expect("targets should exist")
                 .to_string_lossy();
             println!(" - {}", folder_name);
+        }
+    }
+}
+
+fn print_hooks_section(label: &str, hooks: &[String]) {
+    if !hooks.is_empty() {
+        println!("  {label}:");
+        for hook in hooks {
+            println!("   - {hook}");
         }
     }
 }

@@ -124,7 +124,9 @@ pub fn run(
 
     save_state_data(app)?;
 
-    run_insert_hooks(manifest, no_hooks, quiet)?;
+    if let Some(ref path) = app.path {
+        run_insert_hooks(&manifest, path, no_hooks, quiet)?;
+    }
 
     Ok(())
 }

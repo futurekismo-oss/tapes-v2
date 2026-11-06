@@ -78,5 +78,17 @@ pub enum Commands {
         /// Skip install hooks.
         #[arg(long)]
         no_hooks: bool,
+
+        /// Automatically approve and run install hooks without prompting.
+        #[arg(short = 'y', long = "yes")]
+        yes: bool,
+
+        /// Overwrite existing tape installation.
+        #[arg(short, long)]
+        force: bool,
+
+        /// Perform full clone instead of shallow clone (--depth 1).
+        #[arg(long)]
+        full_clone: bool,
     },
 }
