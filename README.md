@@ -111,6 +111,46 @@ Some handy flags for tapes:
 
 ---
 
+## Installation
+
+**Install script** (grabs the latest release, re-run it to update)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/futurekismo-oss/tapes/main/install.sh | bash
+```
+
+Run `tapes --version` to ensure it worked. Make sure to add `~/.local/bin` to your `$PATH`.
+
+**Cargo**
+
+```bash
+cargo install tapes-v2@v0.1.7-beta
+cargo binstall tapes-v2@v0.1.7-beta # prebuilt binary instead of compiling
+```
+
+Try to add `~/.cargo/bin` to your `$PATH` if `tapes --version` doesn't work
+
+**Nix**
+
+```bash
+nix run github:futurekismo-oss/tapes
+nix profile install github:futurekismo-oss/tapes
+```
+
+**From source**
+
+```bash
+git clone https://github.com/futurekismo-oss/tapes
+cd tapes
+cargo install --path .
+```
+
+Tapes supports tab completion. Just add ``source <(COMPLETIONS=zsh tapes)`` to your shell init (`.zshrc`, or `.bashrc`). Replace `zsh` with your chosen shell. It supports `zsh`, `fish`, `bash`, `elvish` and `nushell`
+
+> **Tip**: If you find the name `tapes` annoying you can alias it to `tapes`, the binary can't be renamed tapes as it's taken on [crates.io](https://crates.io/search?q=tapes)
+
+---
+
 ## Global Configuration
 
 Tapes supports an optional global configuration file located at `~/.local/share/tapes/config.toml`.
@@ -160,46 +200,6 @@ ignore = ["wallpapers", "assets", "scripts", ".DS_Store"]
 </details>
 
 ---
-
-## Installation
-
-**Install script** (grabs the latest release, re-run it to update)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/futurekismo-oss/tapes/main/install.sh | bash
-```
-
-Run `tapes --version` to ensure it worked. Make sure to add `~/.local/bin` to your `$PATH`.
-
-**Cargo**
-
-```bash
-cargo install tapes-v2@v0.1.7-beta
-cargo binstall tapes-v2@v0.1.7-beta # prebuilt binary instead of compiling
-```
-
-Try to add `~/.cargo/bin` to your `$PATH` if `tapes --version` doesn't work
-
-**Nix**
-
-```bash
-nix run github:futurekismo-oss/tapes
-nix profile install github:futurekismo-oss/tapes
-```
-
-**From source**
-
-```bash
-git clone https://github.com/futurekismo-oss/tapes
-cd tapes
-cargo install --path .
-```
-
----
-
-Tapes supports tab completion. Just add ``source <(COMPLETIONS=zsh tapes)`` to your shell init (`.zshrc`, or `.bashrc`). Replace `zsh` with your chosen shell. It supports `zsh`, `fish`, `bash`, `elvish` and `nushell`
-
-> **Tip**: If you find the name `tapes` annoying you can alias it to `tapes`, the binary can't be renamed tapes as it's taken on [crates.io](https://crates.io/search?q=tapes)
 
 
 ## Why Use Tapes?
