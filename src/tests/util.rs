@@ -36,7 +36,7 @@ fn swap_works_when_one_dir_is_empty() {
 
     atomic_swap(a.path(), b.path()).unwrap();
 
-    assert!(a.path().join("file").exists() == false);
+    assert!(!a.path().join("file").exists());
     assert_eq!(fs::read_to_string(b.path().join("file")).unwrap(), "A");
 }
 
