@@ -7,7 +7,10 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::{AppState, hooks, util::get_tapes_default_path};
+use crate::{
+    AppState, hooks,
+    util::{expand_tilde, get_tapes_default_path},
+};
 
 pub struct InstallOptions {
     pub source: String,
@@ -26,7 +29,8 @@ pub fn run(opts: InstallOptions) -> Result<(), anyhow::Error> {
     let source_path = expand_tilde(source_trimmed);
     let is_explicit = is_explicit_local_path(source_trimmed);
     let is_local_dir = is_local_source(&source_path, is_explicit)?;
-    let tape_name = resolve_tape_name(opts.name.as_deref(), source_trimmed, &source_path, is_local_dir);
+    let url = normalize_git_url(source_trimmed);
+    let tape_name = resolve_tape_name(opts.name.as_deref(), &url, &source_path, is_local_dir);
 
     info!("Resolved tape name: {tape_name}");
 
@@ -40,7 +44,7 @@ pub fn run(opts: InstallOptions) -> Result<(), anyhow::Error> {
 
     install_source(
         &opts,
-        source_trimmed,
+        &url,
         &source_path,
         is_local_dir,
         &target_dir,
@@ -99,7 +103,7 @@ fn is_local_source(path: &Path, is_explicit: bool) -> Result<bool, anyhow::Error
 
 fn resolve_tape_name(
     name: Option<&str>,
-    source: &str,
+    url: &str,
     source_path: &Path,
     is_local_dir: bool,
 ) -> String {
@@ -110,7 +114,7 @@ fn resolve_tape_name(
             .and_then(|n| n.to_str())
             .unwrap_or("tape")
             .to_lowercase(),
-        _ => source
+        _ => url
             .trim_end_matches('/')
             .trim_end_matches(".git")
             .rsplit('/')
@@ -120,10 +124,9 @@ fn resolve_tape_name(
     };
 
     if chosen.is_empty() {
-        "tape".to_string()
-    } else {
-        chosen
+        return "tape".to_string();
     }
+    chosen
 }
 
 fn prepare_target_dir(
@@ -152,17 +155,31 @@ fn prepare_target_dir(
         );
     }
 
+    if crate::config::Config::get().install.backup_on_force {
+        let backup_dir = target_dir.with_extension("bak");
+        if backup_dir.exists() {
+            let _ = fs::remove_dir_all(&backup_dir);
+        }
+        if !quiet {
+            println!("Backing up existing tape to {}...", backup_dir.display());
+        }
+        return fs::rename(target_dir, &backup_dir).with_context(|| {
+            format!("Failed to backup existing tape to {}", backup_dir.display())
+        });
+    }
+
     if !quiet {
         println!("Removing existing tape at {}...", target_dir.display());
     }
-    fs::remove_dir_all(target_dir).with_context(|| {
-        format!("Failed to remove existing tape at {}", target_dir.display())
-    })
+    fs::remove_dir_all(target_dir)
+        .with_context(|| format!("Failed to remove existing tape at {}", target_dir.display()))?;
+
+    Ok(())
 }
 
 fn install_source(
     opts: &InstallOptions,
-    source_trimmed: &str,
+    url: &str,
     source_path: &Path,
     is_local_dir: bool,
     target_dir: &Path,
@@ -181,7 +198,7 @@ fn install_source(
     }
 
     if !opts.quiet {
-        println!("Cloning tape '{tape_name}' from {source_trimmed}...");
+        println!("Cloning tape '{tape_name}' from {url}...");
     }
 
     let temp_clone_dir = opts.dir.as_ref().map(|_| {
@@ -194,11 +211,11 @@ fn install_source(
         ))
     });
 
-    let url = normalize_git_url(source_trimmed);
     let mut cmd = Command::new("git");
     cmd.arg("clone");
 
-    if !opts.full_clone {
+    let use_shallow = !opts.full_clone && crate::config::Config::get().install.shallow_clone;
+    if use_shallow {
         cmd.arg("--depth").arg("1");
     }
 
@@ -207,7 +224,7 @@ fn install_source(
     }
 
     let clone_dest = temp_clone_dir.as_deref().unwrap_or(target_dir);
-    cmd.arg(&url).arg(clone_dest);
+    cmd.arg(url).arg(clone_dest);
 
     info!("git command: {:?}", cmd);
     let status = cmd.status().context("Failed to execute git clone")?;
@@ -221,8 +238,8 @@ fn install_source(
     }
 
     if let Some(ref tmp) = temp_clone_dir {
-        let copy_res = resolve_subdir(tmp, opts.dir.as_deref())
-            .and_then(|sub| copy_dir(&sub, target_dir));
+        let copy_res =
+            resolve_subdir(tmp, opts.dir.as_deref()).and_then(|sub| copy_dir(&sub, target_dir));
         let _ = fs::remove_dir_all(tmp);
         copy_res?;
     }
@@ -266,20 +283,6 @@ desc = "Tape installed from {source_trimmed}"
     Ok(())
 }
 
-fn expand_tilde(path_str: &str) -> PathBuf {
-    if let Some(rest) = path_str.strip_prefix("~/")
-        && let Some(home) = dirs::home_dir()
-    {
-        return home.join(rest);
-    }
-    if path_str == "~"
-        && let Some(home) = dirs::home_dir()
-    {
-        return home;
-    }
-    PathBuf::from(path_str)
-}
-
 fn resolve_subdir(base: &Path, dir: Option<&str>) -> Result<PathBuf, anyhow::Error> {
     let Some(d) = dir else {
         return Ok(base.to_path_buf());
@@ -296,37 +299,26 @@ fn normalize_git_url(source: &str) -> String {
         return source.to_string();
     }
 
-    // Support shorthands like gitlab:user/repo, gl:user/repo, gh:user/repo
-    if let Some(rest) = source
-        .strip_prefix("gitlab:")
-        .or_else(|| source.strip_prefix("gl:"))
-    {
-        return format!("https://gitlab.com/{}.git", rest.trim_end_matches(".git"));
-    }
-    if let Some(rest) = source
-        .strip_prefix("github:")
-        .or_else(|| source.strip_prefix("gh:"))
-    {
-        return format!("https://github.com/{}.git", rest.trim_end_matches(".git"));
-    }
-    if let Some(rest) = source
-        .strip_prefix("codeberg:")
-        .or_else(|| source.strip_prefix("cb:"))
-    {
-        return format!("https://codeberg.org/{}.git", rest.trim_end_matches(".git"));
+    let config = crate::config::Config::get();
+    for (prefix, base_url) in &config.install.providers {
+        let colon_prefix = format!("{prefix}:");
+        if let Some(rest) = source.strip_prefix(&colon_prefix) {
+            let base = base_url.trim_end_matches('/');
+            let path = rest.trim_start_matches('/');
+            return format!("{base}/{path}");
+        }
     }
 
     for host in &["github.com", "gitlab.com", "codeberg.org"] {
         if let Some(rest) = source.strip_prefix(&format!("{host}/")) {
-            return format!("https://{host}/{}.git", rest.trim_end_matches(".git"));
+            return format!("https://{host}/{rest}");
         }
     }
 
     if source.contains('/') {
-        format!("https://github.com/{}.git", source.trim_end_matches(".git"))
-    } else {
-        source.to_string()
+        return format!("https://github.com/{source}");
     }
+    source.to_string()
 }
 
 fn copy_dir(source: &Path, destination: &Path) -> Result<(), anyhow::Error> {
@@ -346,13 +338,17 @@ fn copy_dir(source: &Path, destination: &Path) -> Result<(), anyhow::Error> {
             }
             std::os::unix::fs::symlink(&link_target, &target)
                 .with_context(|| format!("Failed to create symlink at {}", target.display()))?;
-        } else if file_type.is_dir() {
-            copy_dir(&path, &target)?;
-        } else {
-            fs::copy(&path, &target).with_context(|| {
-                format!("Failed to copy {} to {}", path.display(), target.display())
-            })?;
+            continue;
         }
+
+        if file_type.is_dir() {
+            copy_dir(&path, &target)?;
+            continue;
+        }
+
+        fs::copy(&path, &target).with_context(|| {
+            format!("Failed to copy {} to {}", path.display(), target.display())
+        })?;
     }
 
     Ok(())

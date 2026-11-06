@@ -26,7 +26,7 @@ pub struct Cli {
 pub enum Commands {
     /// Insert a tape from the library or an arbitrary path.
     Insert {
-        /// Library name (e.g. `dms`). Defaults to manifest name with --path.
+        /// Library name (e.g. `dms`). Defaults to manifest name with --path or default_tape in config.
         #[arg(add = ArgValueCompleter::new(TapeCompleter))]
         name: Option<String>,
         /// Arbitrary tape directory (e.g. a cloned ii-end4 fork).
@@ -90,5 +90,11 @@ pub enum Commands {
         /// Perform full clone instead of shallow clone (--depth 1).
         #[arg(long)]
         full_clone: bool,
+    },
+
+    /// Manage global tapes configuration.
+    Config {
+        #[command(subcommand)]
+        action: Option<crate::cli::config::ConfigAction>,
     },
 }

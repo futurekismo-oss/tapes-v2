@@ -102,12 +102,62 @@ Some handy flags for tapes:
 --dry-run # shows the plan without touching any files
 --no-hooks # skip running any hooks
 -p, --path # insert a tape straight out any folder
--q, --queit # quiet output
+-q, --quiet # quiet output
 -v, --verbose # verbose output
 -l, --logging # show logs, useful for reporting issues and debugging
 
 -V, --version # display the current version
 ```
+
+---
+
+## Global Configuration
+
+Tapes supports an optional global configuration file located at `~/.tapes/config.toml`.
+
+Generate a starter configuration with:
+
+```bash
+tapes config init
+```
+
+Helpful management subcommands:
+
+```bash
+tapes config path   # Show location of active config file
+tapes config show   # Display current effective configuration
+```
+
+<details>
+<summary><b>Click to view example config.toml</b></summary>
+
+```toml
+# Default tape when running `tapes insert` without arguments
+# default_tape = "my-default"
+
+[install]
+shallow_clone = true              # Use --depth 1 for git clones by default
+backup_on_force = true            # Backup existing tape to .bak on --force reinstall
+
+# Custom Git provider shorthands (e.g. `tapes install lab:user/rice`)
+[install.providers]
+lab = "https://git.myserver.com/"
+
+[hooks.global]
+# Lifecycle hooks executed across ALL tapes
+post_insert = [
+    "notify-send 'Tapes' 'Switched tape to $TAPE_NAME'"
+]
+post_eject = [
+    "notify-send 'Tapes' 'Restored base configuration'"
+]
+
+[targets]
+# Files or folders in a tape that should never be symlinked into ~/.config
+ignore = ["wallpapers", "assets", "scripts", ".DS_Store"]
+```
+
+</details>
 
 ---
 

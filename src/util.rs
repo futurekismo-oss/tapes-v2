@@ -51,11 +51,14 @@ pub fn get_staging_config_path() -> Result<PathBuf, anyhow::Error> {
     Ok(home.join(STAGING_DIR_NAME))
 }
 
-pub fn get_tapes_default_path() -> Result<PathBuf, anyhow::Error> {
-    let tapes_dir = home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
-    let tapes_dir = tapes_dir.join(".tapes");
+pub fn get_user_config_dir() -> Result<PathBuf, anyhow::Error> {
+    config_dir().ok_or_else(|| anyhow::anyhow!("Could not find config directory"))
+}
 
-    // make ~/.tapes if first time running
+pub fn get_tapes_default_path() -> Result<PathBuf, anyhow::Error> {
+    let home = home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
+    let tapes_dir = home.join(".tapes");
+
     if !tapes_dir.exists() {
         fs::create_dir_all(&tapes_dir)?;
     }
@@ -81,7 +84,7 @@ pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
     let mut detected: Vec<PathBuf> = Vec::new();
 
     // skip repo metadata and tape manifests so only real app configs get symlinked into ~/.config
-    const IGNORED: &[&str] = &[
+    const BUILTIN_IGNORED: &[&str] = &[
         "tape.toml",
         ".git",
         ".gitattributes",
@@ -93,17 +96,19 @@ pub fn find_targets(path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {
         MARKER_FILE_NAME,
     ];
 
-    // if dir doesn't exist yet (fresh install / no .config), nothing to find
     if !path.exists() {
         return Ok(detected);
     }
 
+    let user_ignored = &crate::config::Config::get().targets.ignore;
+
     for target in fs::read_dir(path)? {
         let target = target?;
 
-        if let Some(name) = target.file_name().to_str()
-            && !IGNORED.contains(&name)
-        {
+        if let Some(name) = target.file_name().to_str() {
+            if BUILTIN_IGNORED.contains(&name) || user_ignored.iter().any(|i| i == name) {
+                continue;
+            }
             detected.push(target.path());
         }
     }
@@ -123,7 +128,7 @@ pub fn atomic_swap<P: AsRef<Path>, Q: AsRef<Path>>(path1: P, path2: Q) -> io::Re
 }
 
 pub fn validate_correct_tapes_dir_structure() -> Result<(), anyhow::Error> {
-    let config_dir = config_dir().expect("Config dir should exist");
+    let config_dir = get_user_config_dir()?;
     let tapes_config_dir = get_staging_config_path()?;
 
     if !config_dir.exists() {
@@ -157,6 +162,20 @@ pub fn yes_or_no_prompt(message: &str) -> bool {
     }
 
     input.trim().eq_ignore_ascii_case("y")
+}
+
+pub fn expand_tilde(path_str: &str) -> PathBuf {
+    if let Some(rest) = path_str.strip_prefix("~/")
+        && let Some(home) = home_dir()
+    {
+        return home.join(rest);
+    }
+    if path_str == "~"
+        && let Some(home) = home_dir()
+    {
+        return home;
+    }
+    PathBuf::from(path_str)
 }
 
 pub fn get_all_tapes_in_dir(tapes_path: &Path) -> Result<Vec<PathBuf>, anyhow::Error> {

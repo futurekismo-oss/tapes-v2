@@ -66,10 +66,9 @@ static LOGGER: SimpleLogger = SimpleLogger {
 };
 
 pub fn init(logging: bool, log_file_path: Option<&Path>) {
-    let default = if logging {
-        LevelFilter::Trace
-    } else {
-        LevelFilter::Warn
+    let default = match logging {
+        true => LevelFilter::Trace,
+        false => LevelFilter::Warn,
     };
 
     let level = std::env::var("RUST_LOG")

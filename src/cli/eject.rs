@@ -1,14 +1,13 @@
 use std::{fs, path::Path};
 
 use anyhow::{Context, bail};
-use dirs::config_dir;
 use log::info;
 
 use crate::{
     AppState,
     hooks::run_eject_hooks,
     util::{
-        MARKER_FILE_NAME, atomic_swap, get_staging_config_path, load_manifest,
+        MARKER_FILE_NAME, atomic_swap, get_staging_config_path, get_user_config_dir, load_manifest,
         validate_correct_tapes_dir_structure,
     },
 };
@@ -21,7 +20,7 @@ pub fn run(
 ) -> Result<(), anyhow::Error> {
     info!("running eject command");
 
-    let config_dir = config_dir().expect("Config dir should exist");
+    let config_dir = get_user_config_dir()?;
     let tapes_config_dir = get_staging_config_path()?;
 
     info!(
@@ -60,8 +59,12 @@ pub fn eject_tapes(
     quiet: bool,
     no_hooks: bool,
 ) -> Result<(), anyhow::Error> {
-    // manifest and tape path should be retrieved before app data is cleared by app.eject()
+    // manifest, tape name, and tape path should be retrieved before app data is cleared by app.eject()
     let tape_path = app.path.clone();
+    let tape_name = app
+        .active_tape
+        .clone()
+        .unwrap_or_else(|| "unknown".to_string());
     let manifest = tape_path.as_deref().and_then(|p| load_manifest(p).ok());
 
     app.eject()?;
@@ -93,11 +96,13 @@ pub fn eject_tapes(
     info!("running eject hooks now");
     info!("manifest: {:#?}", manifest);
 
-    if let Some(ref m) = manifest {
-        run_eject_hooks(m, tape_path.as_deref(), no_hooks, quiet)?;
-    } else if !quiet {
-        info!("Skipping eject hooks: tape manifest could not be loaded");
-    }
+    run_eject_hooks(
+        manifest.as_ref(),
+        &tape_name,
+        tape_path.as_deref(),
+        no_hooks,
+        quiet,
+    )?;
 
     Ok(())
 }

@@ -1,37 +1,36 @@
 use anyhow::bail;
-use dirs::config_dir;
 
 use crate::{
     cli::show::display_tape_info,
     state::AppState,
     util::{
-        MARKER_FILE_NAME, get_staging_config_path, load_manifest,
+        MARKER_FILE_NAME, get_staging_config_path, get_user_config_dir, load_manifest,
         validate_correct_tapes_dir_structure,
     },
 };
 
 pub fn show(app: AppState, verbose: bool) -> Result<(), anyhow::Error> {
     if app.active_tape.is_none() && app.path.is_none() {
-        let cfg = config_dir().expect("Config dir should exist");
+        let cfg = get_user_config_dir()?;
         let tapes_config_dir = get_staging_config_path()?;
         let marker = cfg.join(MARKER_FILE_NAME);
 
-        if tapes_config_dir.exists() || marker.exists() {
-            println!("No active tape recorded, but tapes-managed artifacts were found:");
-            if tapes_config_dir.exists() {
-                println!(
-                    " - Found leftover staging directory at {}",
-                    tapes_config_dir.display()
-                );
-            }
-            if marker.exists() {
-                println!(" - Found marker file at {}", marker.display());
-            }
-            println!("You can run 'tapes eject' to recover your original configuration.");
-        } else {
+        if !tapes_config_dir.exists() && !marker.exists() {
             println!("No tape is currently inserted.");
+            return Ok(());
         }
 
+        println!("No active tape recorded, but tapes-managed artifacts were found:");
+        if tapes_config_dir.exists() {
+            println!(
+                " - Found leftover staging directory at {}",
+                tapes_config_dir.display()
+            );
+        }
+        if marker.exists() {
+            println!(" - Found marker file at {}", marker.display());
+        }
+        println!("You can run 'tapes eject' to recover your original configuration.");
         return Ok(());
     }
 
