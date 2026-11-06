@@ -166,11 +166,11 @@ pub fn resolve_tape(
     anyhow::bail!("No path provided and no tape.toml found in the current directory")
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Target {
-    target_path: PathBuf,
-    symlink_dest: PathBuf,
-    from_tapes: bool,
+    pub(crate) target_path: PathBuf,
+    pub(crate) symlink_dest: PathBuf,
+    pub(crate) from_tapes: bool,
 }
 
 fn resolve_targets(
@@ -217,7 +217,7 @@ fn map_target(target_path: PathBuf, new_config_dir: &Path, from_tapes: bool) -> 
     (target_name, target)
 }
 
-fn symlink_targets(
+pub fn symlink_targets(
     targets_map: &HashMap<String, Target>,
     quiet: bool,
 ) -> Result<(), anyhow::Error> {

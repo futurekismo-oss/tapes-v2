@@ -14,6 +14,9 @@ use log::info;
 use cli::{config as cli_config, eject, insert, install, show, status, structs::Commands};
 use state::AppState;
 
+#[cfg(test)]
+mod tests;
+
 use crate::{cli::completions, util::get_tapes_data_path};
 
 fn main() -> Result<(), anyhow::Error> {

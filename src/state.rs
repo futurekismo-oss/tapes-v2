@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use crate::cli::insert::Target;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 pub struct AppState {
     pub active_tape: Option<String>,
     pub path: Option<PathBuf>,
