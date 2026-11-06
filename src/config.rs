@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs, path::PathBuf, sync::OnceLock};
 
 use anyhow::{Context, Result};
-use dirs::home_dir;
+use dirs::data_local_dir;
 use serde::{Deserialize, Serialize};
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
@@ -89,12 +89,12 @@ impl Config {
         let _ = CONFIG.set(config);
     }
 
-    /// Config file location: ~/.tapes/config.toml
+    /// Config file location: ~/.local/share/tapes/config.toml
     pub fn default_config_path() -> Option<PathBuf> {
-        home_dir().map(|h| h.join(".tapes").join("config.toml"))
+        data_local_dir().map(|h| h.join("tapes").join("config.toml"))
     }
 
-    /// Find existing config file path at ~/.tapes/config.toml.
+    /// Find existing config file path at ~/.local/share/tapes/config.toml.
     pub fn find_config_file() -> Option<PathBuf> {
         let path = Self::default_config_path()?;
         path.exists().then_some(path)
@@ -120,7 +120,7 @@ impl Config {
     /// Returns a commented default configuration template.
     pub fn default_template() -> &'static str {
         r#"# ==============================================================================
-# Tapes Configuration (~/.tapes/config.toml)
+# Tapes Configuration (~/.local/share/tapes/config.toml)
 # ==============================================================================
 
 # Default tape to insert when running `tapes insert` without arguments

@@ -113,7 +113,7 @@ Some handy flags for tapes:
 
 ## Global Configuration
 
-Tapes supports an optional global configuration file located at `~/.tapes/config.toml`.
+Tapes supports an optional global configuration file located at `~/.local/share/tapes/config.toml`.
 
 Generate a starter configuration with:
 

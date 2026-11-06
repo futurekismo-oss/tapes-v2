@@ -11,7 +11,7 @@ pub enum ConfigAction {
     Path,
     /// Display the current effective configuration in TOML format
     Show,
-    /// Create a sample configuration file at ~/.tapes/config.toml
+    /// Create a sample configuration file at ~/.local/share/tapes/config.toml
     Init {
         /// Overwrite existing configuration file
         #[arg(short, long)]
