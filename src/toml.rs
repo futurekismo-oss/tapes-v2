@@ -9,7 +9,7 @@ pub struct TapeManifest {
 #[derive(Debug, Deserialize, Clone)]
 pub struct TapeInfo {
     pub name: String,
-    pub desc: String,
+    pub desc: Option<String>,
     pub dependencies: Option<Vec<String>>,
 }
 

@@ -6,6 +6,9 @@ pub mod state;
 pub mod toml;
 pub mod util;
 
+#[cfg(test)]
+mod tests;
+
 use clap::{CommandFactory, Parser};
 use clap_complete::CompleteEnv;
 use cli::structs::Cli;
